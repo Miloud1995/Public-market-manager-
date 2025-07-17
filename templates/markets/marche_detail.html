@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }} - Gestion des Marchés Publics{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-6">
+ <h1 style="font-size: 20px; align-items: center; color:gray;">Détails du marché N°{{marche.numero}}</h1>
+    </div>
+    <div class="col-6">
+        
+     <div class="btn-toolbar mb-2 mb-md-0" style="float: right;">
+        <a href="{% url 'marche_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Retour à la liste
+        </a>
+    </div>
+    </div>
+</div>
+   
+<div class="row">
+<div class="col-6">
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Numéro</label>
+        <input class="inp" type="text" disabled="true" value="{{marche.numero}}">
+
+    </div>
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Objet de marché </label>
+        <input class="inp" type="text" disabled="true" value="{{marche.objet}}">
+
+    </div>
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Type </label>
+        <input class="inp" type="text" disabled="true" value="{{marche.type}}">
+
+    </div>
+     <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Statut </label>
+        <input class="inp" type="text" disabled="true" value="{{marche.statut}}">
+
+    </div>
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Montant  (DH) </label>
+        <input class="inp" type="text" disabled="true" value="{{marche.montant}}">
+
+    </div>
+     <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Maitre d'ouvrage</label>
+        <input class="inp" type="text" disabled="true" value="{{marche.maitre_ouvrage}}">
+
+    </div>
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Prestataire</label>
+        <input class="inp" type="text" disabled="true" value="{{marche.prestataire}}">
+
+    </div>
+</div>   
+     
+
+<div class="col-6">
+
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Prix unitaitre (DH) </label>
+        <input class="inp" type="text" disabled="true" value="{%if marche.prix_unitaire%}{{marche.prix_unitaire}}{%else%}non-definie{%endif%}">
+
+    </div>
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Dete Signature </label>
+        <input class="inp" type="date" disabled="true" value='{{marche.date_signature|date:"Y-m-d"}}'>
+
+    </div>
+     <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Dete début </label>
+        <input class="inp" type="date" disabled="true" value="{{marche.date_debut|date:'Y-m-d'}}">
+
+    </div>
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Dete Fin </label>
+        <input class="inp" type="date" disabled="true" value="{{marche.date_fin|date:'Y-m-d'}}">
+
+    </div>
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >periodicite</label>
+        <input class="inp" type="text" disabled="true" value="{{marche.periodicite}}">
+
+    </div>
+     <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >marque</label>
+        <input class="inp" type="text" disabled="true" value="{%if marche.marque%}{{marche.marque}}{%else%}non-definie{%endif%}">
+
+    </div>
+    
+</div>
+</div>
+
+ <div class="col-12" style="margin-left: 20px;">
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Description</label>
+        <textarea class="inp" type="text" disabled="true" >
+            {{marche.descripion}}
+        </textarea>
+
+    </div>
+</div> 
+
+   
+     
+    
+
+
+
+
+<div class="row" style="margin-top: 15px;">
+<div class="col-4">
+    <label style="color: gray;align-items: center;">PVs</label>
+    <div class="Form-group" style="margin-top: 15px;background:#f5f4f4"> 
+    
+    <ul>
+        {%for pv in marche.pvs.all %}
+        <li>{{pv.numero}}</li>
+        {%empty%}
+        <li>No pvs associé</li>
+         {%endfor%}
+    </ul>
+
+    </div>
+</div>
+<div class="col-4">
+    <label style="color: gray;align-items: center;">decompte</label>
+    <div class="Form-group" style="margin-top: 15px;background:#f5f4f4"> 
+    
+    <ul>
+        {%for decompte in marche.decomptes.all %}
+        <li>{{decompte.numero}}</li>
+        {%empty%}
+        <li>No decompte associé</li>
+         {%endfor%}
+    </ul>
+
+    </div>
+</div>
+<div class="col-4">
+    <label style="color: gray;align-items: center;" >order de service</label>
+    <div class="Form-group" style="margin-top: 15px;background:#f5f4f4 ;"> 
+    
+    <ul>
+        {%for order in marche.order_services.all %}
+        <li>{{order.numero}}</li>
+        {%empty%}
+        <li>No order d'service  associé</li>
+         {%endfor%}
+    </ul>
+
+    </div>
+</div>
+</div>
+
+
+
+
+
+
+
+
+
+
+{% endblock %}

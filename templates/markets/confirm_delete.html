@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }} - Gestion des Marchés Publics{% endblock %}
+
+{% block content %}
+
+<h2>Confirm la suppression</h2>
+<p>Voulez vous vraiment supprimer {{object}}?</p>
+<form method="post">
+    {%csrf_token%}
+    <button type="submit" class="btn btn-danger">Oui ,Supprimer</button>
+    <a href="{%url 'marche_list'%}" class="btn btn-outline-secondary">Annuler</a>
+</form>
+
+
+{%endblock%}

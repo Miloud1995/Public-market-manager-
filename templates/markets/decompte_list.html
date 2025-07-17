@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block title %}Liste des Marchés - Gestion des Marchés Publics{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    
+    <div class="btn-toolbar mb-2 mb-md-0" >
+        <a href="{% url 'decompte_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i>
+            Nouveau Decompte
+        </a>
+    </div>
+</div>
+
+<!-- Filters and Search -->
+ 
+
+<!-- Decompes Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Liste des Decomptes</h5>
+    </div>
+    <div class="card-body">
+        {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Numéro</th>
+                            <th>Periode debut</th>
+                            <th>Periode fin</th>
+                            <th>Montant HT</th>
+                            <th>Montant TTC</th>
+                            <th>Statut</th>
+                            <th>marché</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for decompte in page_obj %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'marche_detail' marche.pk %}" class="text-decoration-none fw-bold">
+                                    {{ decompte.numero }}
+                                </a>
+                            </td>
+                            <td>{{ decompte.peroide_debut|truncatechars:50 }}</td>
+                            <td>{{ decompte.peroide_fin|truncatechars:50 }}</td>
+                            
+                
+                            <td class="fw-bold">{{ decompte.montant_ht|floatformat:2 }}DH</td>
+                            <td class="fw-bold">{{ decompte.montant_ttc|floatformat:2 }}DH</td>
+                            <td>
+                                <span class="badge bg-{% if decompte.statut == 'brouillon' %}warning{% elif decompte.statut == 'valide' %}primary{% elif decompte.statut == 'paye' %}success{% else %}danger{% endif %}">
+                                    {{ decompte.get_statut_display }}
+                                </span>
+                            </td>
+                          
+
+                    
+
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'marche_detail' marche.pk %}" class="btn btn-sm btn-outline-primary" title="Voir">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'marche_update' marche.pk %}" class="btn btn-sm btn-outline-warning" title="Modifier">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'generate_marche_pdf' marche.pk %}" class="btn btn-sm btn-outline-success" title="PDF">
+                                        <i class="bi bi-file-pdf"></i>
+                                    </a>
+                                    <a href="{% url 'marche_delete' marche.pk %}" class="btn btn-sm btn-outline-danger" title="Supprimer">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if statut_filter %}&statut={{ statut_filter }}{% endif %}">Première</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if statut_filter %}&statut={{ statut_filter }}{% endif %}">Précédente</a>
+                            </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if statut_filter %}&statut={{ statut_filter }}{% endif %}">Suivante</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if statut_filter %}&statut={{ statut_filter }}{% endif %}">Dernière</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-file-text display-1 text-muted"></i>
+                <h4 class="mt-3">Aucun Decompte trouvé</h4>
+                <p class="text-muted">Commencez par créer votre premier Decompte.</p>
+                <a href="{% url 'decompte_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i>
+                    Créer un Decompte
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

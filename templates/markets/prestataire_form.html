@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }} - Gestion des Marchés Publics{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">{{ title }}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'prestataire_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Retour à la liste
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Informations du Prestataire</h5>
+            </div>
+            <div class="card-body">
+                {% crispy form %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Aide</h5>
+            </div>
+            <div class="card-body">
+                <h6>Champs obligatoires :</h6>
+                <ul class="list-unstyled">
+                    <li><i class="bi bi-check-circle text-success"></i> Nom</li>
+                    <li><i class="bi bi-check-circle text-success"></i> Adresse</li>
+                    <li><i class="bi bi-check-circle text-success"></i> telephone</li>
+                    <li><i class="bi bi-check-circle text-success"></i> email</li>
+                
+                </ul>
+                
+                <hr>
+                
+                {#<h6>Types de marchés :</h6>#}
+                {#<ul class="list-unstyled small">#}
+                   {# <li><strong>Travaux :</strong> Construction, rénovation</li>#}
+                   {# <li><strong>Fournitures :</strong> Matériel, équipements</li>#}
+                   {# <li><strong>Services :</strong> Prestations intellectuelles</li>#}
+                    {#<li><strong>Maintenance :</strong> Entretien, réparations</li>#}
+                {#</ul>#}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+
+{% block title %}Tableau de bord - Gestion des Marchés Publics{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Tableau de bord</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        {#<div class="btn-group me-2">#}
+            {#<button type="button" class="btn btn-sm btn-outline-secondary">#}
+                {#<i class="bi bi-download"></i>#}
+                {#Exporter#}
+            {#</button>#}
+        {#</div>#}
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="stats-card">
+            <h3>{{ total_marches }}</h3>
+            <p><i class="bi bi-file-text"></i> Total Marchés</p>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="stats-card" style="background: linear-gradient(135deg, var(--success-color), #77a091);">
+            <h3>{{ marches_en_cours }}</h3>
+            <p><i class="bi bi-play-circle"></i> Marchés en Cours</p>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="stats-card" style="background: linear-gradient(135deg, var(--accent-color), #444e83);">
+            <h3>{{ total_prestataires }}</h3>
+            <p><i class="bi bi-people"></i> Prestataires</p>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="stats-card" style="background: linear-gradient(135deg, var(--warning-color), #8b8b8d);">
+            <h3>{{ montant_total|floatformat:0 }} DH</h3>
+            <p>DH Montant Total</p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Markets -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-file-text"></i>
+                    Marchés Récents
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_marches %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Numéro</th>
+                                    <th>Objet</th>
+                                    <th>Prestataire</th>
+                                    <th>Montant</th>
+                                    <th>Statut</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for marche in recent_marches %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'marche_detail' marche.pk %}" class="text-decoration-none">
+                                            {{ marche.numero }}
+                                        </a>
+                                    </td>
+                                    <td>{{ marche.objet|truncatechars:50 }}</td>
+                                    <td>{{ marche.prestataire.nom }}</td>
+                                    <td>{{ marche.montant|floatformat:2 }} DH</td>
+                                    <td>
+                                        <span class="badge bg-{% if marche.statut == 'en_cours' %}success{% elif marche.statut == 'termine' %}primary{% else %}secondary{% endif %}">
+                                            {{ marche.get_statut_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">Aucun marché enregistré.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Decomptes -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-calculator"></i>
+                    Décomptes Récents
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_decomptes %}
+                    {% for decompte in recent_decomptes %}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h6 class="mb-1">{{ decompte.numero }}</h6>
+                            <small class="text-muted">{{ decompte.marche.numero }}</small>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold">{{ decompte.montant_ttc|floatformat:2 }} DH</div>
+                            <span class="badge bg-{% if decompte.statut == 'valide' %}success{% elif decompte.statut == 'paye' %}primary{% else %}warning{% endif %} text-dark">
+                                {{ decompte.get_statut_display }}
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">Aucun décompte enregistré.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightning"></i>
+                    Actions Rapides
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'marche_create' %}" class="btn btn-success w-100">
+                            <i class="bi bi-plus-circle"></i>
+                            Nouveau Marché
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'prestataire_create' %}" class="btn btn-success w-100">
+                            <i class="bi bi-person-plus"></i>
+                            Nouveau Prestataire
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'maitre_ouvrage_create' %}" class="btn btn-success w-100">
+                            <i class="bi bi-building"></i>
+                            Nouveau Maître d'Ouvrage
+                        </a>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
