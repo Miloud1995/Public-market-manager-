@@ -91,6 +91,11 @@
         <input class="inp" type="text" disabled="true" value="{%if marche.marque%}{{marche.marque}}{%else%}non-definie{%endif%}">
 
     </div>
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Rest a payer</label>
+        <input class="inp" type="text" disabled="true" value="{{marche.rest_a_payer}}">
+
+    </div>
     
 </div>
 </div>
@@ -132,10 +137,10 @@
     <div class="Form-group" style="margin-top: 15px;background:#f5f4f4"> 
     
     <ul>
-        {%for decompte in marche.decomptes.all %}
-        <li>{{decompte.numero}}</li>
-        {%empty%}
-        <li>No decompte associé</li>
+       {%for decompte in decomptes %}
+       <li><a href="#" style="text-decoration: none;">{{decompte.numero}}</a> </li>
+       {%empty%}
+       <li>No decomptes associe</li>
          {%endfor%}
     </ul>
 
@@ -155,6 +160,7 @@
 
     </div>
 </div>
+<div style="width: 20%;"><a href="#" class="btn btn-outline-success" >Mettre fin au marché</a> </div>
 </div>
 
 

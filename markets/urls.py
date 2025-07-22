@@ -31,5 +31,6 @@ urlpatterns = [
     #decompte URLs
     path('decomptes/', views.decompte_list, name='decompte_list'),
     path('decompte/create/', views.decompte_create, name='decompte_create'),
+    path('decompte/<int:pk>/pdf/', views.generate_decompte_pdf, name='generate_decompte_pdf'),
     
 ]

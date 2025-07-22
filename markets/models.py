@@ -75,6 +75,7 @@ class Marche(models.Model):
     objet = models.TextField(verbose_name="Objet du marché")
     type = models.CharField(max_length=20, choices=TYPE_CHOICES, verbose_name="Type")
     montant = models.DecimalField(max_digits=15, decimal_places=2, verbose_name="Montant (DH)")
+    rest_a_payer = models.DecimalField(max_digits=15, decimal_places=2, verbose_name="Montant (DH)")
     prix_unitaire = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="Prix unitaire (DH)")
     date_signature = models.DateField(null=True, blank=True, verbose_name="Date de signature")
     date_debut = models.DateField(null=True, blank=True, verbose_name="Date de début")
@@ -98,7 +99,11 @@ class Marche(models.Model):
 
     def get_absolute_url(self):
         return reverse('marche_detail', kwargs={'pk': self.pk})
-
+    
+    def save(self, *args, **kwargs):
+        if not self.pk:  
+            self.rest_a_payer = self.montant
+        super().save(*args, **kwargs)
 
 class OrdreService(models.Model):
     """Service Order"""
@@ -147,11 +152,13 @@ class Decompte(models.Model):
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='brouillon', verbose_name="Statut")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    marche = models.ManyToManyField(
-        Marche,
-        related_name='décomptes',
-        blank=True
+    marche = models.ForeignKey(
+        Marche, 
+        on_delete=models.CASCADE,  
+        related_name='decomptes',
+        null=True
     )
+   
 
     class Meta:
         verbose_name = "Décompte"

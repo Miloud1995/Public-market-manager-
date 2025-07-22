@@ -41,12 +41,13 @@
                         {% for decompte in page_obj %}
                         <tr>
                             <td>
-                                <a href="{% url 'marche_detail' marche.pk %}" class="text-decoration-none fw-bold">
+                                <a class="text-decoration-none fw-bold">
                                     {{ decompte.numero }}
                                 </a>
                             </td>
-                            <td>{{ decompte.peroide_debut|truncatechars:50 }}</td>
-                            <td>{{ decompte.peroide_fin|truncatechars:50 }}</td>
+                            <td>{{ decompte.periode_debut|date:"d/m/Y" }}</td>
+                            <td>{{ decompte.periode_fin|date:"d/m/Y" }}</td>
+                            <!--<td>{{ decompte.peroide_fin|date:"d/m/Y" }}</td>-->
                             
                 
                             <td class="fw-bold">{{ decompte.montant_ht|floatformat:2 }}DH</td>
@@ -57,21 +58,23 @@
                                 </span>
                             </td>
                           
-
+                             <td>
+                               {{decompte.marche.objet}}
+                             </td>
                     
 
                             <td>
                                 <div class="btn-group" role="group">
-                                    <a href="{% url 'marche_detail' marche.pk %}" class="btn btn-sm btn-outline-primary" title="Voir">
+                                    <a  class="btn btn-sm btn-outline-primary" title="Voir">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    <a href="{% url 'marche_update' marche.pk %}" class="btn btn-sm btn-outline-warning" title="Modifier">
+                                    <a  class="btn btn-sm btn-outline-warning" title="Modifier">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    <a href="{% url 'generate_marche_pdf' marche.pk %}" class="btn btn-sm btn-outline-success" title="PDF">
+                                     <a href="{% url 'generate_decompte_pdf' decompte.pk %}" class="btn btn-sm btn-outline-success" title="PDF">
                                         <i class="bi bi-file-pdf"></i>
                                     </a>
-                                    <a href="{% url 'marche_delete' marche.pk %}" class="btn btn-sm btn-outline-danger" title="Supprimer">
+                                    <a  class="btn btn-sm btn-outline-danger" title="Supprimer">
                                         <i class="bi bi-trash"></i>
                                     </a>
                                 </div>

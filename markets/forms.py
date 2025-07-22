@@ -64,6 +64,7 @@ class MarcheForm(forms.ModelForm):
         model = Marche
         fields = ['numero', 'objet', 'type', 'montant','prix_unitaire', 'date_signature', 
                  'date_debut', 'date_fin', 'statut', 'maitre_ouvrage', 'prestataire','marque', 'periodicite','description']
+        exclude = ['rest_a_payer']
         widgets = {
             'objet': forms.Textarea(attrs={'rows': 3}),
             'date_signature': forms.DateInput(attrs={'type': 'date'}),
@@ -126,6 +127,7 @@ class DecompteForm(forms.ModelForm):
         widgets = {
             'periode_debut': forms.DateInput(attrs={'type': 'date'}),
             'periode_fin': forms.DateInput(attrs={'type': 'date'}),
+            'marche': forms.Select(attrs={'class': 'form-control'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -133,6 +135,11 @@ class DecompteForm(forms.ModelForm):
         self.helper = FormHelper()
         self.fields['montant_ht'].widget.attrs.update({'step': '0.01'})
         self.fields['montant_ttc'].widget.attrs.update({'step': '0.01'})
+
+        
+        self.fields['marche'].queryset = Marche.objects.all().order_by('numero')
+        self.fields['marche'].empty_label = "Sélectionnez un marché"  # Custom empty label
+        self.fields['marche'].label = "Marché associé"  # Custom label
         self.helper.layout = Layout(
              Row(
                 Column('numero', css_class='form-group col-md-6 mb-0'),
