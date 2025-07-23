@@ -71,7 +71,7 @@ class Marche(models.Model):
     ]
 
 
-    numero = models.CharField(max_length=50, unique=True, verbose_name="Numéro du marché")
+    numero = models.CharField(max_length=50, unique=True, verbose_name="Référence ")
     objet = models.TextField(verbose_name="Objet du marché")
     type = models.CharField(max_length=20, choices=TYPE_CHOICES, verbose_name="Type")
     montant = models.DecimalField(max_digits=15, decimal_places=2, verbose_name="Montant (DH)")
@@ -114,7 +114,7 @@ class OrdreService(models.Model):
         ('annule', 'Annulé'),
     ]
 
-    numero = models.CharField(max_length=50, unique=True, verbose_name="Numéro")
+    numero = models.CharField(max_length=50, unique=True, verbose_name="Désignation")
     objet = models.TextField(verbose_name="Objet")
     date_emission = models.DateField(null=True, blank=True, verbose_name="Date d'émission")
     date_execution = models.DateField(null=True, blank=True, verbose_name="Date d'exécution")
@@ -144,10 +144,10 @@ class Decompte(models.Model):
         ('rejete', 'Rejeté'),
     ]
 
-    numero = models.CharField(max_length=50, unique=True, verbose_name="Numéro")
+    numero = models.CharField(max_length=50, unique=True, verbose_name="Désignation")
     periode_debut = models.DateField(null=True, blank=True, verbose_name="Période début")
     periode_fin = models.DateField(null=True, blank=True, verbose_name="Période fin")
-    montant_ht = models.DecimalField(max_digits=15, decimal_places=2, verbose_name="Montant HT (DH)")
+    #montant_ht = models.DecimalField(max_digits=15, decimal_places=2, verbose_name="Montant HT (DH)")
     montant_ttc = models.DecimalField(max_digits=15, decimal_places=2, verbose_name="Montant TTC (DH)")
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='brouillon', verbose_name="Statut")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -179,7 +179,7 @@ class PV(models.Model):
         ('autre', 'Autre'),
     ]
 
-    numero = models.CharField(max_length=50, unique=True, verbose_name="Numéro")
+    numero = models.CharField(max_length=50, unique=True, verbose_name="Désignation")
     type = models.CharField(max_length=20, choices=TYPE_CHOICES, verbose_name="Type")
     date_pv = models.DateField(null=True, blank=True, verbose_name="Date du PV")
     objet = models.TextField(verbose_name="Objet")

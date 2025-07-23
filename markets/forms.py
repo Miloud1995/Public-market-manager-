@@ -123,7 +123,7 @@ class OrdreServiceForm(forms.ModelForm):
 class DecompteForm(forms.ModelForm):
     class Meta:
         model = Decompte
-        fields = ['numero', 'periode_debut', 'periode_fin', 'montant_ht', 'montant_ttc', 'statut', 'marche']
+        fields = ['numero', 'periode_debut', 'periode_fin', 'montant_ttc', 'statut', 'marche']
         widgets = {
             'periode_debut': forms.DateInput(attrs={'type': 'date'}),
             'periode_fin': forms.DateInput(attrs={'type': 'date'}),
@@ -133,7 +133,7 @@ class DecompteForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
-        self.fields['montant_ht'].widget.attrs.update({'step': '0.01'})
+        
         self.fields['montant_ttc'].widget.attrs.update({'step': '0.01'})
 
         
@@ -153,15 +153,12 @@ class DecompteForm(forms.ModelForm):
                 css_class='form-row'
             ),
             Row(
-                Column('montant_ht', css_class='form-group col-md-6 mb-0'),
-                Column('montant_ttc', css_class='form-group col-md-6 mb-0'),
-                css_class='form-row'
-            ),
-            Row(
-                Column('marche', css_class='form-group col-md-4 mb-0'),
                 
+                Column('montant_ttc', css_class='form-group col-md-6 mb-0'),
+                Column('marche', css_class='form-group col-md-4 mb-0'),
                 css_class='form-row'
             ),
+           
             
             Submit('submit', 'Enregistrer', css_class='btn btn-primary')
         )

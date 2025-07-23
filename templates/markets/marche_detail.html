@@ -22,23 +22,8 @@
 <div class="row">
 <div class="col-6">
     <div class="Form-group" style="margin-top: 15px;"> 
-        <label class="labell" >Numéro</label>
+        <label class="labell" >Référence</label>
         <input class="inp" type="text" disabled="true" value="{{marche.numero}}">
-
-    </div>
-    <div class="Form-group" style="margin-top: 15px;"> 
-        <label class="labell" >Objet de marché </label>
-        <input class="inp" type="text" disabled="true" value="{{marche.objet}}">
-
-    </div>
-    <div class="Form-group" style="margin-top: 15px;"> 
-        <label class="labell" >Type </label>
-        <input class="inp" type="text" disabled="true" value="{{marche.type}}">
-
-    </div>
-     <div class="Form-group" style="margin-top: 15px;"> 
-        <label class="labell" >Statut </label>
-        <input class="inp" type="text" disabled="true" value="{{marche.statut}}">
 
     </div>
     <div class="Form-group" style="margin-top: 15px;"> 
@@ -46,6 +31,24 @@
         <input class="inp" type="text" disabled="true" value="{{marche.montant}}">
 
     </div>
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Dete Signature </label>
+        <input class="inp" type="date" disabled="true" value='{{marche.date_signature|date:"Y-m-d"}}'>
+
+    </div>
+    
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Dete Fin </label>
+        <input class="inp" type="date" disabled="true" value="{{marche.date_fin|date:'Y-m-d'}}">
+
+    </div> 
+     <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Prix unitaitre (DH) </label>
+        <input class="inp" type="text" disabled="true" value="{%if marche.prix_unitaire%}{{marche.prix_unitaire}}{%else%}non-definie{%endif%}">
+
+    </div>
+    
+    
      <div class="Form-group" style="margin-top: 15px;"> 
         <label class="labell" >Maitre d'ouvrage</label>
         <input class="inp" type="text" disabled="true" value="{{marche.maitre_ouvrage}}">
@@ -60,25 +63,27 @@
      
 
 <div class="col-6">
-
     <div class="Form-group" style="margin-top: 15px;"> 
-        <label class="labell" >Prix unitaitre (DH) </label>
-        <input class="inp" type="text" disabled="true" value="{%if marche.prix_unitaire%}{{marche.prix_unitaire}}{%else%}non-definie{%endif%}">
+        <label class="labell" >Objet de marché </label>
+        <input class="inp" type="text" disabled="true" value="{{marche.objet}}">
 
     </div>
-    <div class="Form-group" style="margin-top: 15px;"> 
-        <label class="labell" >Dete Signature </label>
-        <input class="inp" type="date" disabled="true" value='{{marche.date_signature|date:"Y-m-d"}}'>
+
+   <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Type </label>
+        <input class="inp" type="text" disabled="true" value="{{marche.type}}">
 
     </div>
+    
      <div class="Form-group" style="margin-top: 15px;"> 
         <label class="labell" >Dete début </label>
         <input class="inp" type="date" disabled="true" value="{{marche.date_debut|date:'Y-m-d'}}">
 
     </div>
-    <div class="Form-group" style="margin-top: 15px;"> 
-        <label class="labell" >Dete Fin </label>
-        <input class="inp" type="date" disabled="true" value="{{marche.date_fin|date:'Y-m-d'}}">
+    
+     <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Statut </label>
+        <input class="inp" type="text" disabled="true" value="{{marche.statut}}">
 
     </div>
     <div class="Form-group" style="margin-top: 15px;"> 

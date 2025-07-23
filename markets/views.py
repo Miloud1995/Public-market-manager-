@@ -476,7 +476,6 @@ def generate_decompte_pdf(request, pk):
         ['Numéro du decompte:', decompte.numero],
         ['periode debut:', decompte.periode_debut],
         ['Periode Fin:', decompte.periode_fin],
-        ['Montant HT:', f"{decompte.montant_ht:,.2f} DH"],
          ['Montant TTC:', f"{decompte.montant_ttc:,.2f} DH"],
         ['Statut:', decompte.get_statut_display()],
          ['Marché:', decompte.marche.objet],
@@ -543,3 +542,15 @@ def generate_decompte_pdf(request, pk):
     response.write(pdf)
     
     return response
+
+
+
+#Decompte delete
+@login_required
+def decompte_delete(request, pk):
+    decompte = get_object_or_404(Decompte, pk=pk)
+    if request.method == 'POST':
+       decompte .delete()
+       messages.success(request, 'Decompte  supprimé avec succès.')
+       return redirect('decompte_list')
+    return render(request, 'markets/confirm_delete.html', {'object': decompte, 'type': 'Decompte'})

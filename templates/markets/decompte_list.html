@@ -27,10 +27,9 @@
                 <table class="table table-hover">
                     <thead>
                         <tr>
-                            <th>Numéro</th>
+                            <th>Designation</th>
                             <th>Periode debut</th>
                             <th>Periode fin</th>
-                            <th>Montant HT</th>
                             <th>Montant TTC</th>
                             <th>Statut</th>
                             <th>marché</th>
@@ -50,7 +49,7 @@
                             <!--<td>{{ decompte.peroide_fin|date:"d/m/Y" }}</td>-->
                             
                 
-                            <td class="fw-bold">{{ decompte.montant_ht|floatformat:2 }}DH</td>
+                            
                             <td class="fw-bold">{{ decompte.montant_ttc|floatformat:2 }}DH</td>
                             <td>
                                 <span class="badge bg-{% if decompte.statut == 'brouillon' %}warning{% elif decompte.statut == 'valide' %}primary{% elif decompte.statut == 'paye' %}success{% else %}danger{% endif %}">
@@ -74,7 +73,7 @@
                                      <a href="{% url 'generate_decompte_pdf' decompte.pk %}" class="btn btn-sm btn-outline-success" title="PDF">
                                         <i class="bi bi-file-pdf"></i>
                                     </a>
-                                    <a  class="btn btn-sm btn-outline-danger" title="Supprimer">
+                                    <a href="{%url 'decompte_delete' decompte.pk%}"  class="btn btn-sm btn-outline-danger" title="Supprimer">
                                         <i class="bi bi-trash"></i>
                                     </a>
                                 </div>

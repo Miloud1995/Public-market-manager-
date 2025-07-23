@@ -14,7 +14,9 @@
         {#</div>#}
     </div>
 </div>
-
+<!--style="background: linear-gradient(135deg, var(--success-color), #77a091);"
+style="background: linear-gradient(135deg, var(--accent-color), #444e83);"
+style="background: linear-gradient(135deg, var(--warning-color), #8b8b8d);"-->
 <!-- Statistics Cards -->
 <div class="row mb-4">
     <div class="col-xl-3 col-md-6 mb-4">
@@ -24,19 +26,19 @@
         </div>
     </div>
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="stats-card" style="background: linear-gradient(135deg, var(--success-color), #77a091);">
+        <div class="stats-card" >
             <h3>{{ marches_en_cours }}</h3>
             <p><i class="bi bi-play-circle"></i> Marchés en Cours</p>
         </div>
     </div>
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="stats-card" style="background: linear-gradient(135deg, var(--accent-color), #444e83);">
+        <div class="stats-card" >
             <h3>{{ total_prestataires }}</h3>
             <p><i class="bi bi-people"></i> Prestataires</p>
         </div>
     </div>
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="stats-card" style="background: linear-gradient(135deg, var(--warning-color), #8b8b8d);">
+        <div class="stats-card" >
             <h3>{{ montant_total|floatformat:0 }} DH</h3>
             <p>DH Montant Total</p>
         </div>
@@ -140,19 +142,19 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-3 mb-3">
-                        <a href="{% url 'marche_create' %}" class="btn btn-success w-100">
+                        <a href="{% url 'marche_create' %}" class="btn btn-outline-success w-100" style = "opacity: 80%;">
                             <i class="bi bi-plus-circle"></i>
                             Nouveau Marché
                         </a>
                     </div>
                     <div class="col-md-3 mb-3">
-                        <a href="{% url 'prestataire_create' %}" class="btn btn-success w-100">
+                        <a href="{% url 'prestataire_create' %}" class="btn btn-outline-success w-100" style = "opacity: 80%;">
                             <i class="bi bi-person-plus"></i>
                             Nouveau Prestataire
                         </a>
                     </div>
                     <div class="col-md-3 mb-3">
-                        <a href="{% url 'maitre_ouvrage_create' %}" class="btn btn-success w-100">
+                        <a href="{% url 'maitre_ouvrage_create' %}" class="btn btn-outline-success w-100" style = "opacity: 80%;">
                             <i class="bi bi-building"></i>
                             Nouveau Maître d'Ouvrage
                         </a>
