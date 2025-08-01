@@ -33,5 +33,6 @@ urlpatterns = [
     path('decompte/create/', views.decompte_create, name='decompte_create'),
     path('decompte/<int:pk>/pdf/', views.generate_decompte_pdf, name='generate_decompte_pdf'),
     path('decompte/<int:pk>/delete/', views.decompte_delete, name='decompte_delete'),
+    path('decompte/<int:pk>/update/', views.decompte_update, name='decompte_update'),
     
 ]

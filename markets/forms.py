@@ -62,7 +62,7 @@ class PrestataireForm(forms.ModelForm):
 class MarcheForm(forms.ModelForm):
     class Meta:
         model = Marche
-        fields = ['numero', 'objet', 'type', 'montant','prix_unitaire', 'date_signature', 
+        fields = ['numero', 'objet', 'type', 'montant','montant_annual','quantite','prix_unitaire', 'date_signature', 
                  'date_debut', 'date_fin', 'statut', 'maitre_ouvrage', 'prestataire','marque', 'periodicite','description']
         exclude = ['rest_a_payer']
         widgets = {
@@ -85,12 +85,14 @@ class MarcheForm(forms.ModelForm):
             'objet',
             Row(
                 Column('montant', css_class='form-group col-md-6 mb-0'),
+                Column('montant_annual', css_class='form-group col-md-6 mb-0'),
                 Column('statut', css_class='form-group col-md-6 mb-0'),
                 css_class='form-row'
             ),
             Row(
                 Column('maitre_ouvrage', css_class='form-group col-md-6 mb-0'),
                 Column('prestataire', css_class='form-group col-md-6 mb-0'),
+                Column('quantite', css_class='form-group col-md-6 mb-0'),
                 css_class='form-row'
             ),
             Row(
@@ -123,7 +125,8 @@ class OrdreServiceForm(forms.ModelForm):
 class DecompteForm(forms.ModelForm):
     class Meta:
         model = Decompte
-        fields = ['numero', 'periode_debut', 'periode_fin', 'montant_ttc', 'statut', 'marche']
+        fields = ['numero', 'periode_debut', 'periode_fin','montant_ht','unite_de_mesure','tva', 'statut', 'marche','quantite','montant_ttc']
+        exclude = ['montant_ttc','montant_ht']
         widgets = {
             'periode_debut': forms.DateInput(attrs={'type': 'date'}),
             'periode_fin': forms.DateInput(attrs={'type': 'date'}),
@@ -134,7 +137,7 @@ class DecompteForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
         
-        self.fields['montant_ttc'].widget.attrs.update({'step': '0.01'})
+         #self.fields['montant_ttc'].widget.attrs.update({'step': '0.1'})
 
         
         self.fields['marche'].queryset = Marche.objects.all().order_by('numero')
@@ -152,12 +155,20 @@ class DecompteForm(forms.ModelForm):
                 Column('periode_fin', css_class='form-group col-md-6 mb-0'),
                 css_class='form-row'
             ),
+           
             Row(
-                
-                Column('montant_ttc', css_class='form-group col-md-6 mb-0'),
                 Column('marche', css_class='form-group col-md-4 mb-0'),
+                Column('tva', css_class='form-group col-md-4 mb-0'),
                 css_class='form-row'
             ),
+            Row(
+                Column('unite_de_mesure', css_class='form-group col-md-4 mb-0'),
+                Column('quantite', css_class='form-group col-md-4 mb-0'),
+                css_class='form-row'
+            ),
+            Row('description', css_class='form-group col-md-12 mb-0'),
+            
+            
            
             
             Submit('submit', 'Enregistrer', css_class='btn btn-primary')

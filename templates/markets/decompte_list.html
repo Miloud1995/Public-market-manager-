@@ -31,6 +31,7 @@
                             <th>Periode debut</th>
                             <th>Periode fin</th>
                             <th>Montant TTC</th>
+                            <!--<th>Montant HT</th>-->
                             <th>Statut</th>
                             <th>marché</th>
                             <th>Actions</th>
@@ -46,11 +47,12 @@
                             </td>
                             <td>{{ decompte.periode_debut|date:"d/m/Y" }}</td>
                             <td>{{ decompte.periode_fin|date:"d/m/Y" }}</td>
-                            <!--<td>{{ decompte.peroide_fin|date:"d/m/Y" }}</td>-->
+                            
                             
                 
                             
                             <td class="fw-bold">{{ decompte.montant_ttc|floatformat:2 }}DH</td>
+                            
                             <td>
                                 <span class="badge bg-{% if decompte.statut == 'brouillon' %}warning{% elif decompte.statut == 'valide' %}primary{% elif decompte.statut == 'paye' %}success{% else %}danger{% endif %}">
                                     {{ decompte.get_statut_display }}
@@ -67,7 +69,7 @@
                                     <a  class="btn btn-sm btn-outline-primary" title="Voir">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    <a  class="btn btn-sm btn-outline-warning" title="Modifier">
+                                    <a  href="{% url 'decompte_update' decompte.pk %}" class="btn btn-sm btn-outline-warning" title="Modifier">
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                      <a href="{% url 'generate_decompte_pdf' decompte.pk %}" class="btn btn-sm btn-outline-success" title="PDF">

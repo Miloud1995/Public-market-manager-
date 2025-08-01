@@ -31,22 +31,40 @@
         <input class="inp" type="text" disabled="true" value="{{marche.montant}}">
 
     </div>
+    {%if marche.montant_annual%}
     <div class="Form-group" style="margin-top: 15px;"> 
-        <label class="labell" >Dete Signature </label>
+        <label class="labell" >Montant Annuel  (DH) </label>
+        <input class="inp" type="text" disabled="true" value="{{marche.montant_annual}}">
+
+    </div>
+    {%endif%}
+     
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Date Signature </label>
         <input class="inp" type="date" disabled="true" value='{{marche.date_signature|date:"Y-m-d"}}'>
 
     </div>
+
+    {%if marche.quantite%}
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Quantité </label>
+        <input class="inp" type="text" disabled="true" value="{{marche.quantite}}">
+
+    </div>
+    {%endif%}
     
     <div class="Form-group" style="margin-top: 15px;"> 
         <label class="labell" >Dete Fin </label>
         <input class="inp" type="date" disabled="true" value="{{marche.date_fin|date:'Y-m-d'}}">
 
     </div> 
+    {%if marche.prix_unitaire%}
      <div class="Form-group" style="margin-top: 15px;"> 
         <label class="labell" >Prix unitaitre (DH) </label>
-        <input class="inp" type="text" disabled="true" value="{%if marche.prix_unitaire%}{{marche.prix_unitaire}}{%else%}non-definie{%endif%}">
+        <input class="inp" type="text" disabled="true" value="{{marche.prix_unitaire}}">
 
     </div>
+    {%endif%}
     
     
      <div class="Form-group" style="margin-top: 15px;"> 
@@ -86,16 +104,20 @@
         <input class="inp" type="text" disabled="true" value="{{marche.statut}}">
 
     </div>
+    {%if marche.periodicite%}
     <div class="Form-group" style="margin-top: 15px;"> 
         <label class="labell" >periodicite</label>
         <input class="inp" type="text" disabled="true" value="{{marche.periodicite}}">
 
     </div>
-     <div class="Form-group" style="margin-top: 15px;"> 
-        <label class="labell" >marque</label>
-        <input class="inp" type="text" disabled="true" value="{%if marche.marque%}{{marche.marque}}{%else%}non-definie{%endif%}">
+    {%endif%}
+    {%if marche.marque%}
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Caractéristiques</label>
+        <input class="inp" type="text" disabled="true" value="{{marche.marque}}">
 
     </div>
+    {%endif%}
     <div class="Form-group" style="margin-top: 15px;"> 
         <label class="labell" >Rest a payer</label>
         <input class="inp" type="text" disabled="true" value="{{marche.rest_a_payer}}">

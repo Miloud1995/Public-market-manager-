@@ -2,6 +2,10 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils import timezone
+from decimal import Decimal, InvalidOperation
+from dateutil.relativedelta import relativedelta
+from dateutil.relativedelta import relativedelta
+from django.core.exceptions import ValidationError
 
 class MaitreOuvrage(models.Model):
     """Maître d'ouvrage - Client/Owner"""
@@ -75,17 +79,19 @@ class Marche(models.Model):
     objet = models.TextField(verbose_name="Objet du marché")
     type = models.CharField(max_length=20, choices=TYPE_CHOICES, verbose_name="Type")
     montant = models.DecimalField(max_digits=15, decimal_places=2, verbose_name="Montant (DH)")
+    montant_annual= models.DecimalField(max_digits=15,null=True,blank=True, decimal_places=2, verbose_name="Montant Annuel (DH)")
     rest_a_payer = models.DecimalField(max_digits=15, decimal_places=2, verbose_name="Montant (DH)")
-    prix_unitaire = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="Prix unitaire (DH)")
+    prix_unitaire = models.DecimalField(max_digits=10, decimal_places=2,null=True,blank=True, verbose_name="Prix unitaire (DH)")
     date_signature = models.DateField(null=True, blank=True, verbose_name="Date de signature")
     date_debut = models.DateField(null=True, blank=True, verbose_name="Date de début")
     date_fin = models.DateField(null=True, blank=True, verbose_name="Date de fin")
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='en_cours', verbose_name="Statut")
     maitre_ouvrage = models.ForeignKey(MaitreOuvrage, on_delete=models.CASCADE, verbose_name="Maître d'ouvrage")
     prestataire = models.ForeignKey(Prestataire, on_delete=models.CASCADE, verbose_name="Prestataire")
-    marque = models.CharField(max_length=100, blank=True, verbose_name="Marque")
-    periodicite = models.CharField(max_length=20, choices=PERIODICITE_CHOICES, blank=True, verbose_name="Périodicité")
-    description = models.TextField(blank=True, verbose_name="description")
+    marque = models.CharField(max_length=100,null=True,blank=True,verbose_name="Marque")
+    quantite = models.PositiveIntegerField(null= True ,blank = True , verbose_name="Quantité")
+    periodicite = models.CharField(max_length=20,null=True,blank=True, choices=PERIODICITE_CHOICES,verbose_name="Périodicité")
+    description = models.TextField(blank=True,null= True,verbose_name="description")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -147,9 +153,13 @@ class Decompte(models.Model):
     numero = models.CharField(max_length=50, unique=True, verbose_name="Désignation")
     periode_debut = models.DateField(null=True, blank=True, verbose_name="Période début")
     periode_fin = models.DateField(null=True, blank=True, verbose_name="Période fin")
-    #montant_ht = models.DecimalField(max_digits=15, decimal_places=2, verbose_name="Montant HT (DH)")
-    montant_ttc = models.DecimalField(max_digits=15, decimal_places=2, verbose_name="Montant TTC (DH)")
+    montant_ht = models.DecimalField(max_digits=15,decimal_places=2, verbose_name="Montant HT (DH)")
+    tva = models.DecimalField(max_digits=15,decimal_places=2,default=20,verbose_name="TVA (%)")
+    unite_de_mesure = models.CharField(max_length=10, blank=True, null=True, verbose_name="Unité de mesure")
+    quantite = models.PositiveIntegerField(null=True, blank=True, verbose_name="Quantité")
+    montant_ttc = models.DecimalField(max_digits=15,decimal_places=2,editable=False)
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='brouillon', verbose_name="Statut")
+    description = models.TextField(blank=True, null=True, verbose_name=" description")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     marche = models.ForeignKey(
@@ -158,7 +168,53 @@ class Decompte(models.Model):
         related_name='decomptes',
         null=True
     )
-   
+
+
+     # def save(self, *args, **kwargs):
+        # if self.marche and self.periode_debut and self.periode_fin:
+            # Vérifie que le montant annuel est bien défini
+            #  montant_annuel = self.marche.montant_annual or Decimal(0)
+
+            # Utilise la TVA définie ou par défaut à 20%
+             # tva = self.tva if self.tva is not None else Decimal(20)
+
+            # Vérifie que la date de début du marché est définie
+             # date_debut_marche = self.marche.date_debut
+             # if not date_debut_marche:
+                 # raise ValueError("Le marché doit avoir une date de début définie")
+
+            # Détermine le nombre de périodes par an en fonction de la périodicité
+             # periodicite = self.marche.periodicite
+             # if periodicite == 'trimestrielle':
+                 # periodes_par_an = 4
+            #  elif periodicite == 'semestrielle':
+                 # periodes_par_an = 2
+            #  else:
+                 # periodes_par_an = 1  # annuelle ou autre
+
+            # Calcul du montant par période
+             # montant_par_periode = montant_annuel / Decimal(periodes_par_an)
+
+            # Itération pour trouver la bonne période
+            #  periode_actuelle = date_debut_marche
+             # trouve = False
+
+             # while periode_actuelle < self.periode_fin:
+                 # periode_suivante = periode_actuelle + relativedelta(months=12 // periodes_par_an)
+
+                #  if self.periode_debut >= periode_actuelle and self.periode_fin <= periode_suivante:
+                    # #  self.montant_ht = montant_par_periode
+                    #  self.montant_ttc = self.montant_ht * (1 + tva / 100)
+                    #  trouve = True
+                   #   break
+
+                 # periode_actuelle = periode_suivante
+
+            #if not trouve:
+            
+                #raise ValueError("La période du décompte ne correspond à aucune période du marché.")
+
+        #super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = "Décompte"

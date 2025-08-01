@@ -11,8 +11,12 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.units import inch
+from dateutil.relativedelta import relativedelta
 import io
 from datetime import datetime
+from django.db import transaction
+from decimal import Decimal, InvalidOperation
+from dateutil.relativedelta import relativedelta 
 
 from .models import (
     MaitreOuvrage, Prestataire, Marche, 
@@ -394,30 +398,142 @@ def generate_marche_pdf(request, pk):
     return response
 
 @login_required
+@login_required
 def decompte_create(request):
-    if request.method == 'POST':
+   
+     if request.method == 'POST':
         form = DecompteForm(request.POST)
         if form.is_valid():
-            decompte = form.save(commit=False)  # Ne sauvegarde pas encore
-            if decompte.statut == 'paye':
-                marche = decompte.marche
-                montant_ttc = decompte.montant_ttc
+            try:
+                decompte = form.save(commit=False)
+                
+                # Only process if we have a marché and period dates
+                if decompte.marche and decompte.periode_debut and decompte.periode_fin:
+                    # Validate period dates
+                    if decompte.periode_debut > decompte.periode_fin:
+                        form.add_error('periode_fin', "La date de fin doit être postérieure à la date de début")
+                        return render(request, 'markets/decompte_form.html', {'form': form})
 
-                # Optionnel : vérifier que le reste à payer est suffisant
-                if marche.rest_a_payer >= montant_ttc:
-                    marche.rest_a_payer -= montant_ttc
-                else:
-                    messages.error(request, "Le montant dépasse le reste à payer.")
-                    return render(request, 'markets/decompte_form.html', {'form': form, 'title': 'Nouveau Decompte'})
+                    # Get annual amount
+                    montant_annuel = decompte.marche.montant_annual or Decimal(0)
 
+                    # Verify marché start date exists
+                    if not decompte.marche.date_debut:
+                        form.add_error(None, "Le marché associé doit avoir une date de début définie")
+                        return render(request, 'markets/decompte_form.html', {'form': form})
+
+                    # Determine periods per year
+                    periodicite = decompte.marche.periodicite.lower() if decompte.marche.periodicite else 'annuelle'
+                    periodes_par_an = {
+                        'trimestrielle': 4,
+                        'semestrielle': 2,
+                        'mensuelle': 12,
+                        'annuelle': 1
+                    }.get(periodicite, 1)
+
+                    # Calculate amount per period
+                    montant_par_periode = montant_annuel / Decimal(periodes_par_an)
+
+                    # Find matching period
+                    periode_actuelle = decompte.marche.date_debut
+                    trouve = False
+                    
+                    while periode_actuelle < decompte.periode_fin:
+                        periode_suivante = periode_actuelle + relativedelta(months=12//periodes_par_an)
+
+                        if (decompte.periode_debut >= periode_actuelle and 
+                            decompte.periode_fin <= periode_suivante):
+                            decompte.montant_ht = montant_par_periode.quantize(Decimal('0.01'))
+                            decompte.montant_ttc = (decompte.montant_ht * (1 + decompte.tva/100)).quantize(Decimal('0.01'))
+                            trouve = True
+                            break
+
+                        periode_actuelle = periode_suivante
+
+                    if not trouve:
+                        form.add_error(None, "La période ne correspond à aucune période du marché")
+                        return render(request, 'markets/decompte_form.html', {'form': form})
+
+                # Handle paid status logic
+                if decompte.statut == 'paye':
+                    marche = decompte.marche
+                    if marche.rest_a_payer < decompte.montant_ttc:
+                        form.add_error('montant_ttc', "Le montant dépasse le reste à payer")
+                        return render(request, 'markets/decompte_form.html', {'form': form})
+                    marche.rest_a_payer -= decompte.montant_ttc
+                    marche.save()
+
+                decompte.save()
+                messages.success(request, 'Décompte créé avec succès.')
+                return redirect('decompte_list')
+
+            except Exception as e:
+                messages.error(request, f"Une erreur est survenue : {str(e)}")
+                return render(request, 'markets/decompte_form.html', {'form': form})
+     else:
+        form = DecompteForm()
+    
+     return render(request, 'markets/decompte_form.html', {'form': form})
+
+
+@login_required
+def decompte_update(request, pk):
+    decompte = get_object_or_404(Decompte, pk=pk)
+    
+    # Sauvegarde de l'ancien statut et montant pour comparaison
+    old_statut = decompte.statut
+    old_montant = decompte.montant_ttc
+    
+    if request.method == 'POST':
+        form = DecompteForm(request.POST, instance=decompte)
+        if form.is_valid():
+            new_decompte = form.save(commit=False)
+            
+            if new_decompte.statut == 'paye':
+                marche = new_decompte.marche
+                new_montant = new_decompte.montant_ttc
+                
+                # Cas 1: Le décompte devient "payé" (ancien statut différent)
+                if old_statut != 'paye':
+                    if marche.rest_a_payer >= new_montant:
+                        marche.rest_a_payer -= new_montant
+                    else:
+                        messages.error(request, "Le montant dépasse le reste à payer.")
+                        return render(request, 'markets/decompte_form.html', 
+                                    {'form': form, 'title': 'Modifier Decompte'})
+                
+                # Cas 2: Le montant a changé sur un décompte déjà payé
+                elif old_montant != new_montant:
+                    # On annule d'abord l'ancien montant
+                    marche.rest_a_payer += old_montant
+                    # Puis on applique le nouveau
+                    if marche.rest_a_payer >= new_montant:
+                        marche.rest_a_payer -= new_montant
+                    else:
+                        # On remet l'ancienne valeur si problème
+                        marche.rest_a_payer -= old_montant
+                        messages.error(request, "Le nouveau montant dépasse le reste à payer.")
+                        return render(request, 'markets/decompte_form.html', 
+                                    {'form': form, 'title': 'Modifier Decompte'})
+                
                 marche.save()
-
-            decompte.save()  # Enregistre le décompte après mise à jour du marché
-            messages.success(request, 'Décompte créé avec succès.')
+            
+            # Cas 3: Le décompte n'est plus "payé" (on annule la précédente déduction)
+            elif old_statut == 'paye' and new_decompte.statut != 'paye':
+                marche = new_decompte.marche
+                marche.rest_a_payer += old_montant
+                marche.save()
+            
+            new_decompte.save()
+            messages.success(request, 'Decompte mis à jour avec succès.')
             return redirect('decompte_list')
     else:
-        form = DecompteForm()
-    return render(request, 'markets/decompte_form.html', {'form': form, 'title': 'Nouveau Décompte'})
+        form = DecompteForm(instance=decompte)
+    
+    return render(request, 'markets/decompte_form.html', 
+                 {'form': form, 'title': 'Modifier Decompte'})
+
+
 
 @login_required
 def decompte_list(request):
@@ -471,7 +587,7 @@ def generate_decompte_pdf(request, pk):
     elements.append(title)
     elements.append(Spacer(1, 12))
     
-    # Market information
+    # decompte information
     data = [
         ['Numéro du decompte:', decompte.numero],
         ['periode debut:', decompte.periode_debut],
