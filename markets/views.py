@@ -589,10 +589,12 @@ def generate_decompte_pdf(request, pk):
     
     # decompte information
     data = [
-        ['Numéro du decompte:', decompte.numero],
+        ['Désignation du decompte:', decompte.numero],
         ['periode debut:', decompte.periode_debut],
         ['Periode Fin:', decompte.periode_fin],
          ['Montant TTC:', f"{decompte.montant_ttc:,.2f} DH"],
+         ['Montant HT:', f"{decompte.montant_ht:,.2f} DH"],
+         ['TVA:', f"{decompte.tva}%"],
         ['Statut:', decompte.get_statut_display()],
          ['Marché:', decompte.marche.objet],
        
@@ -600,7 +602,7 @@ def generate_decompte_pdf(request, pk):
     
     table = Table(data, colWidths=[2*inch, 4*inch])
     table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (0, -1), colors.grey),
+        ('BACKGROUND', (0, 0), (0, -1), colors.gray),
         ('TEXTCOLOR', (0, 0), (0, -1), colors.whitesmoke),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
