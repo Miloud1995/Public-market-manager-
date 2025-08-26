@@ -115,17 +115,59 @@ class MarcheForm(forms.ModelForm):
 class OrdreServiceForm(forms.ModelForm):
     class Meta:
         model = OrdreService
-        fields = ['numero', 'objet', 'date_emission', 'date_execution', 'statut', 'marche']
+        fields = ['numero', 'objet','type', 'date_emission', 'date_execution', 'statut','signataire', 'marche','observations','fichier']
         widgets = {
             'objet': forms.Textarea(attrs={'rows': 3}),
             'date_emission': forms.DateInput(attrs={'type': 'date'}),
             'date_execution': forms.DateInput(attrs={'type': 'date'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        
+         #self.fields['montant_ttc'].widget.attrs.update({'step': '0.1'})
+
+        
+        self.fields['marche'].queryset = Marche.objects.all().order_by('numero')
+        self.fields['marche'].empty_label = "Sélectionnez un marché"  # Custom empty label
+        self.fields['marche'].label = "Marché associé"  # Custom label
+        self.helper.layout = Layout(
+             Row(
+                Column('numero', css_class='form-group col-md-6 mb-0'),
+                Column('type', css_class='form-group col-md-6 mb-0'),
+                css_class='form-row'
+            ),
+            'objet',
+            Row(
+                Column('date_emission', css_class='form-group col-md-6 mb-0'),
+                Column('date_execution', css_class='form-group col-md-6 mb-0'),
+                css_class='form-row'
+            ),
+           
+            Row(
+                Column('signataire', css_class='form-group col-md-4 mb-0'),
+                Column('statut', css_class='form-group col-md-4 mb-0'),
+                css_class='form-row'
+            ),
+
+            Column('observations', css_class='form-group col-md-12 mb-0'),
+            Column('marche', css_class='form-group col-md-12 mb-0'),
+            
+            Column('fichier', css_class='form-group col-md-4 mb-0'),
+               
+            
+            
+            
+           
+            
+            Submit('submit', 'Enregistrer', css_class='btn btn-primary')
+        )
+
 class DecompteForm(forms.ModelForm):
     class Meta:
         model = Decompte
-        fields = ['numero', 'periode_debut', 'periode_fin','montant_ht','unite_de_mesure','tva', 'statut', 'marche','quantite','montant_ttc']
+        fields = ['numero', 'periode_debut', 'periode_fin','montant_ht','unite_de_mesure','tva', 'statut', 'marche','quantite','montant_ttc','fichier']
         exclude = ['montant_ttc','montant_ht']
         widgets = {
             'periode_debut': forms.DateInput(attrs={'type': 'date'}),
@@ -167,6 +209,7 @@ class DecompteForm(forms.ModelForm):
                 css_class='form-row'
             ),
             Row('description', css_class='form-group col-md-12 mb-0'),
+            Column('fichier', css_class='form-group col-md-4 mb-0'),
             
             
            
@@ -176,12 +219,44 @@ class DecompteForm(forms.ModelForm):
 class PVForm(forms.ModelForm):
     class Meta:
         model = PV
-        fields = ['numero', 'type', 'date_pv', 'objet', 'observations', 'marche']
+        fields = [
+            'numero', 'type', 'date_pv', 'objet', 'observations',
+            'marche', 'signataire', 'signataire_deux',
+            'signataire_trois', 'fichier',
+        ]
         widgets = {
             'date_pv': forms.DateInput(attrs={'type': 'date'}),
             'objet': forms.Textarea(attrs={'rows': 3}),
             'observations': forms.Textarea(attrs={'rows': 4}),
         }
+
+    def __init__(self, *args, **kwargs):   
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+
+        self.fields['marche'].queryset = Marche.objects.all().order_by('numero')
+        self.fields['marche'].empty_label = "Sélectionnez un marché"
+        self.fields['marche'].label = "Marché associé"
+
+        self.helper.layout = Layout(
+            Row(
+                Column('numero', css_class='form-group col-md-6 mb-0'),
+                Column('type', css_class='form-group col-md-6 mb-0'),
+                css_class='form-row'
+            ),
+            'objet',
+            Row(
+                Column('date_pv', css_class='form-group col-md-6 mb-0'),
+                Column('marche', css_class='form-group col-md-6 mb-0'),
+                css_class='form-row'
+            ),
+            'observations',
+            Row(
+                Column('fichier', css_class='form-group col-md-6 mb-0'),
+                css_class='form-row'
+            ),
+            Submit('submit', 'Enregistrer', css_class='btn btn-primary')  
+        )
 
 class DocumentForm(forms.ModelForm):
     class Meta:

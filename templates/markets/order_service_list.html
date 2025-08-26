@@ -6,9 +6,9 @@
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     
     <div class="btn-toolbar mb-2 mb-md-0" >
-        <a href="{% url 'decompte_create' %}" class="btn btn-primary">
+        <a href="{%url 'order_create'%}" class="btn btn-primary">
             <i class="bi bi-plus-circle"></i>
-            Nouveau Decompte
+            Nouveau Order Service
         </a>
     </div>
 </div>
@@ -19,7 +19,7 @@
 <!-- Decompes Table -->
 <div class="card">
     <div class="card-header">
-        <h5 class="card-title mb-0">Liste des Decomptes</h5>
+        <h5 class="card-title mb-0">Liste des Orders</h5>
     </div>
     <div class="card-body">
         {% if page_obj %}
@@ -27,55 +27,52 @@
                 <table class="table table-hover">
                     <thead>
                         <tr>
-                            <th>Designation</th>
-                            <th>Periode debut</th>
-                            <th>Periode fin</th>
-                            <th>Montant TTC</th>
+                            <th>Désignation</th>
+                            
+                            <th>Date d"emission</th>
+                            <th>Date d'execution </th>
                             <!--<th>Montant HT</th>-->
+                            <th>Signataie</th>
+                            <th>Type</th>
                             <th>Statut</th>
-                            <th>marché</th>
-                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for decompte in page_obj %}
+                        {% for order in page_obj %}
                         <tr>
                             <td>
                                 <a class="text-decoration-none fw-bold">
-                                    {{ decompte.numero }}
+                                    {{ order.numero }}
                                 </a>
                             </td>
-                            <td>{{ decompte.periode_debut|date:"d/m/Y" }}</td>
-                            <td>{{ decompte.periode_fin|date:"d/m/Y" }}</td>
+                            <td>{{ order.date_emission|date:"d/m/Y" }}</td>
+                            <td>{{ order.date_execution|date:"d/m/Y" }}</td>
                             
                             
-                
+                             <td class="fw-bold">{{order.signataire}}</td>
                             
-                            <td class="fw-bold">{{ decompte.montant_ttc|floatformat:2 }}DH</td>
+                            <td class="fw-bold">{{ order.type }}</td>
                             
                             <td>
                                 <span class="badge bg-{% if decompte.statut == 'brouillon' %}warning{% elif decompte.statut == 'valide' %}primary{% elif decompte.statut == 'paye' %}success{% else %}danger{% endif %}">
-                                    {{ decompte.get_statut_display }}
+                                    {{ order.get_statut_display }}
                                 </span>
                             </td>
                           
-                             <td>
-                               {{decompte.marche.objet}}
-                             </td>
-                    
+                          
 
                             <td>
                                 <div class="btn-group" role="group">
-                                    <a  class="btn btn-sm btn-outline-primary" href="{% url 'decompte_detail' decompte.pk%}" title="Voir">
+                                    <a  class="btn btn-sm btn-outline-primary" href="{%url 'order_detail' order.pk%}" title="Voir">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    <a  href="{% url 'decompte_update' decompte.pk %}" class="btn btn-sm btn-outline-warning" title="Modifier">
+                                    <a  href="{%url 'order_update' order.pk%}" class="btn btn-sm btn-outline-warning" title="Modifier">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                     <a href="{% url 'generate_decompte_pdf' decompte.pk %}" class="btn btn-sm btn-outline-success" title="PDF">
+                                     <a href="{%url 'generate_ordre_service_pdf' order.pk%}" class="btn btn-sm btn-outline-success" title="PDF">
                                         <i class="bi bi-file-pdf"></i>
                                     </a>
-                                    <a href="{%url 'decompte_delete' decompte.pk%}"  class="btn btn-sm btn-outline-danger" title="Supprimer">
+                                    <a href="{%url 'order_delete' order.pk%}"  class="btn btn-sm btn-outline-danger" title="Supprimer">
                                         <i class="bi bi-trash"></i>
                                     </a>
                                 </div>
@@ -119,11 +116,11 @@
         {% else %}
             <div class="text-center py-5">
                 <i class="bi bi-file-text display-1 text-muted"></i>
-                <h4 class="mt-3">Aucun Decompte trouvé</h4>
-                <p class="text-muted">Commencez par créer votre premier Decompte.</p>
-                <a href="{% url 'decompte_create' %}" class="btn btn-primary">
+                <h4 class="mt-3">Aucun Order de service trouvé</h4>
+                <p class="text-muted">Commencez par créer votre premier Order de service.</p>
+                <a href="{% url 'order_create' %}" class="btn btn-primary">
                     <i class="bi bi-plus-circle"></i>
-                    Créer un Decompte
+                    Créer un Order de service
                 </a>
             </div>
         {% endif %}

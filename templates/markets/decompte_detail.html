@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }} - Gestion des Marchés Publics{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-6">
+ <h1 style="font-size: 20px; align-items: center; color:gray;">Détails du decompte N°{{decompte.numero}}</h1>
+    </div>
+    <div class="col-6">
+        
+     <div class="btn-toolbar mb-2 mb-md-0" style="float: right;">
+        <a href="{% url 'decompte_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Retour à la liste
+        </a>
+    </div>
+    </div>
+</div>
+   
+<div class="row">
+<div class="col-6">
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Désignation </label>
+        <input class="inp" type="text" disabled="true" value="{{decompte.numero}}">
+
+    </div>
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >monatant HT</label>
+        <input class="inp" type="text" disabled="true" value="{{decompte.montant_ht}}">
+
+    </div>
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >monatant TTC</label>
+        <input class="inp" type="text" disabled="true" value="{{decompte.montant_ttc}}">
+
+    </div>
+    {%if decompte.unite_de_mesure%}
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Unite de mesure </label>
+        <input class="inp" type="text" disabled="true" value="{{decompte.unite_de_mesure}}">
+
+    </div>
+    {%endif%}
+     
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Periode debut  </label>
+        <input class="inp" type="date" disabled="true" value='{{decompte.periode_debut|date:"Y-m-d"}}'>
+
+    </div>
+
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Periode Fin  </label>
+        <input class="inp" type="date" disabled="true" value='{{decompte.periode_fin|date:"Y-m-d"}}'>
+
+    </div>
+
+
+    {%if decompte.quantite%}
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Quantité </label>
+        <input class="inp" type="text" disabled="true" value="{{decompte.quantite}}">
+
+    </div>
+    {%endif%}
+    
+    
+    
+     <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >statut</label>
+        <input class="inp" type="text" disabled="true" value="{{decompte.statut}}">
+
+    </div>
+    {%if decompte.description%}
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Description  </label>
+        <input class="inp" type="text" disabled="true" value="{{decompte.description}}">
+
+    </div>
+    {%endif%}
+
+
+   <div class="form-group" style="margin-top: 15px;">
+    <label class="labell">Marché</label>
+    <input class="inp" type="text" disabled value="{{ marche.numero }}">
+   </div>
+{% if decompte.fichier %}
+    <div class="form-group" style="margin-top: 15px;">
+        <label class="labell">Fichier</label><br>
+        <a href="{{ decompte.fichier.url }}" target="_blank" class="btn btn-outline-primary">
+            Télécharger le fichier
+        </a>
+    </div>
+{% endif %}
+
+
+
+</div>   
+     
+
+</div>
+
+
+
+
+
+
+
+
+
+
+{% endblock %}

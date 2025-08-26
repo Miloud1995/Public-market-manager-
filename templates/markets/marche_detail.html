@@ -165,7 +165,7 @@
     
     <ul>
        {%for decompte in decomptes %}
-       <li><a href="#" style="text-decoration: none;">{{decompte.numero}}</a> </li>
+       <li><a href="{% url 'decompte_detail' decompte.pk %}" style="text-decoration: none;">{{decompte.numero}}</a> </li>
        {%empty%}
        <li>No decomptes associe</li>
          {%endfor%}
@@ -178,8 +178,8 @@
     <div class="Form-group" style="margin-top: 15px;background:#f5f4f4 ;"> 
     
     <ul>
-        {%for order in marche.order_services.all %}
-        <li>{{order.numero}}</li>
+        {%for order in ordres_service %}
+        <li><a href="{% url 'order_detail' order.pk %}" style="text-decoration: none;">{{order.numero}}</a></li>
         {%empty%}
         <li>No order d'service  associé</li>
          {%endfor%}
@@ -187,7 +187,7 @@
 
     </div>
 </div>
-<div style="width: 20%;"><a href="#" class="btn btn-outline-success" >Mettre fin au marché</a> </div>
+<!--<div style="width: 20%;"><a href="#" class="btn btn-outline-success" >Mettre fin au marché</a> </div>-->
 </div>
 
 

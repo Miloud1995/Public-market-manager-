@@ -112,26 +112,46 @@ class Marche(models.Model):
         super().save(*args, **kwargs)
 
 class OrdreService(models.Model):
-    """Service Order"""
+    """Ordre de service"""
+
+    TYPE_CHOICES = [
+        ('commencement', 'Commencement'),
+        ('arret', 'Arrêt'),
+        ('reprise', 'Reprise'),
+        ('resiliation', 'Résiliation'),
+        ('reception', 'Réception'),
+        ('annule', 'Annulé'),
+        ('autre', 'Autre'),
+    ]
+
     STATUT_CHOICES = [
         ('en_attente', 'En attente'),
-        ('en_cours', 'En cours'),
-        ('termine', 'Terminé'),
-        ('annule', 'Annulé'),
+        ('valide', 'Validé'),
+        ('rejete', 'Rejeté'),
     ]
 
     numero = models.CharField(max_length=50, unique=True, verbose_name="Désignation")
     objet = models.TextField(verbose_name="Objet")
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES,default="Commencement" ,verbose_name="Type d'ordre de service")
     date_emission = models.DateField(null=True, blank=True, verbose_name="Date d'émission")
-    date_execution = models.DateField(null=True, blank=True, verbose_name="Date d'exécution")
+    date_execution = models.DateField(null=True, blank=True, verbose_name="Date d'exécution prévue")
+    signataire = models.CharField(max_length=100, null=True, blank=True, verbose_name="Signataire")
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='en_attente', verbose_name="Statut")
+    fichier = models.FileField(upload_to='ordres_service/', null=True, blank=True, verbose_name="Fichier joint (PDF)")
+    observations = models.TextField(null=True, blank=True, verbose_name="Observations complémentaires")
+
+    marche = models.ForeignKey(
+        Marche,
+        on_delete=models.CASCADE,
+        related_name='ordres_service',
+        verbose_name="Marché concerné",
+        null=True
+    )
+
+    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    marche = models.ManyToManyField(
-        Marche,
-        related_name='OrdreServices',
-        blank=True
-    )
 
     class Meta:
         verbose_name = "Ordre de service"
@@ -139,7 +159,7 @@ class OrdreService(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.numero} - {self.objet[:50]}"
+        return f"{self.numero} ({self.get_type_display()})"
 
 class Decompte(models.Model):
     """Payment breakdown/Invoice"""
@@ -159,6 +179,7 @@ class Decompte(models.Model):
     quantite = models.PositiveIntegerField(null=True, blank=True, verbose_name="Quantité")
     montant_ttc = models.DecimalField(max_digits=15,decimal_places=2,editable=False)
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='brouillon', verbose_name="Statut")
+    fichier = models.FileField(upload_to='decompte/', null=True, blank=True, verbose_name="Fichier joint (PDF)")
     description = models.TextField(blank=True, null=True, verbose_name=" description")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -222,7 +243,7 @@ class Decompte(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.numero} - {self.montant_ttc}DH"
+        return f"{self.numero} "
 
 class PV(models.Model):
     """Procès-Verbal (Official Report)"""
@@ -240,12 +261,17 @@ class PV(models.Model):
     date_pv = models.DateField(null=True, blank=True, verbose_name="Date du PV")
     objet = models.TextField(verbose_name="Objet")
     observations = models.TextField(blank=True, verbose_name="Observations")
+    fichier = models.FileField(upload_to='pv/', null=True, blank=True, verbose_name="Fichier joint (PDF)")
+    signataire = models.CharField(max_length=100, null=True, blank=True, verbose_name="Signataire")
+    signataire_deux = models.CharField(max_length=100, null=True, blank=True, verbose_name="Signataire")
+    signataire_trois = models.CharField(max_length=100, null=True, blank=True, verbose_name="Signataire")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    marche = models.ManyToManyField(
-        Marche,
+    marche = models.ForeignKey(
+        Marche, 
+        on_delete=models.CASCADE,  
         related_name='pvs',
-        blank=True
+        null=True
     )
 
     class Meta:

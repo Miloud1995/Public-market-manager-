@@ -1,0 +1,59 @@
+{%extends 'base.html'%}
+{% load crispy_forms_tags %}
+{% block title %}{{ title }} - Gestion des Marchés Publics{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">{{ title }}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'pv_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Retour à la liste
+        </a>
+    </div>
+</div>
+
+{% if form.errors %}
+<div class="alert alert-danger">
+    <strong>Erreurs dans le formulaire :</strong>
+    {{ form.errors }}
+</div>
+{% endif %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Informations du PV</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                   {% csrf_token %}
+                   {% crispy form %}
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Aide</h5>
+            </div>
+            <div class="card-body">
+                <h6>Champs obligatoires :</h6>
+                <ul class="list-unstyled">
+                    <li><i class="bi bi-check-circle text-success"></i> Désignation</li>
+                    <li><i class="bi bi-check-circle text-success"></i> Objet</li>
+                    <li><i class="bi bi-check-circle text-success"></i> Type</li>
+                    <li><i class="bi bi-check-circle text-success"></i> statut</li>
+                    
+                </ul>
+                
+                <hr>
+                
+               
+            </div>
+        </div>
+    </div>
+</div>
+
+{%endblock%}

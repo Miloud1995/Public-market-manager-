@@ -32,7 +32,22 @@ urlpatterns = [
     path('decomptes/', views.decompte_list, name='decompte_list'),
     path('decompte/create/', views.decompte_create, name='decompte_create'),
     path('decompte/<int:pk>/pdf/', views.generate_decompte_pdf, name='generate_decompte_pdf'),
-    path('decompte/<int:pk>/delete/', views.decompte_delete, name='decompte_delete'),
+    path('decompte/<int:pk>/delete/', views. decompte_delete, name='decompte_delete'),
     path('decompte/<int:pk>/update/', views.decompte_update, name='decompte_update'),
+    path('decompte/<int:pk>/', views.decompte_detail, name='decompte_detail'),
     
+
+    #Orderde sevrice  URLs
+    path('orders/',views.order_list, name='order_list'),
+    path('order/create/', views.order_create, name='order_create'),
+    path('order/<int:pk>/pdf/', views.generate_ordre_service_pdf, name='generate_ordre_service_pdf'),
+    path('order/<int:pk>/delete/', views.order_delete, name='order_delete'),
+    path('order/<int:pk>/update/', views.order_update, name='order_update'),
+    path('order/<int:pk>/', views.order_detail, name='order_detail'),
+
+
+
+    #PVs  URLs
+    path('pvs/',views.pv_list, name='pv_list'),
+    path('pv/create/', views.pv_create, name='pv_create')
 ]
