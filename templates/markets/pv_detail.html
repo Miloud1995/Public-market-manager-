@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }} - Gestion des Marchés Publics{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-6">
+ <h1 style="font-size: 20px; align-items: center; color:gray;">Détails du PV {{pv.numero}}</h1>
+    </div>
+    <div class="col-6">
+        
+     <div class="btn-toolbar mb-2 mb-md-0" style="float: right;">
+        <a href="{% url 'pv_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Retour à la liste
+        </a>
+    </div>
+    </div>
+</div>
+   
+<div class="row">
+<div class="col-12">
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Désignation</label>
+        <input class="inp" type="text" disabled="true" value="{{pv.numero}}">
+
+    </div>
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Objet </label>
+        <input class="inp" type="text" disabled="true" value="{{pv.objet}}">
+
+    </div>
+    
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Type </label>
+        <input class="inp" type="text" disabled="true" value="{{pv.type}}">
+
+    </div>
+    
+     
+
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Date PV </label>
+        <input class="inp" type="date" disabled="true" value='{{pv.date_pv|date:"Y-m-d"}}'>
+
+    </div>
+
+    
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Signataire </label>
+        <input class="inp" type="text" disabled="true" value="{{pv.signataire}}">
+
+    </div>
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Signataire 2</label>
+        <input class="inp" type="text" disabled="true" value="{{pv.signataire_deux}}">
+
+    </div>
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Signataire 3</label>
+        <input class="inp" type="text" disabled="true" value="{{pv.signataire_trois}}">
+
+    </div>
+    
+
+     {%if order.observation%}
+     <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Observation</label>
+        <input class="inp" type="text" disabled="true" value="{{pv.observation}}">
+
+    </div>
+
+    {%endif%}    
+    {% if order.fichier %}
+    <div class="form-group" style="margin-top: 15px;">
+        <label class="labell">Fichier</label><br>
+        <a href="{{ pv.fichier.url }}" target="_blank" class="btn btn-outline-primary">
+            Télécharger le fichier
+        </a>
+    </div>
+{% endif %}
+    
+    
+    
+    
+</div>   
+
+
+{% endblock %}

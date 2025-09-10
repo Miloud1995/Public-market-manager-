@@ -34,6 +34,7 @@
                             <!--<th>Montant HT</th>-->
                             <th>Signataie</th>
                             <th>Signataie 2</th>
+                            <th>Actions</th>
                              
                         </tr>
                     </thead>
@@ -58,16 +59,16 @@
 
                             <td>
                                 <div class="btn-group" role="group">
-                                    <a  class="btn btn-sm btn-outline-primary" href="{%url 'order_detail' order.pk%}" title="Voir">
+                                    <a  class="btn btn-sm btn-outline-primary" href="{% url 'pv_detail' pv.pk %}" title="Voir">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    <a  href="{%url 'order_update' order.pk%}" class="btn btn-sm btn-outline-warning" title="Modifier">
+                                    <a  href="{% url 'pv_update' pv.pk %}" class="btn btn-sm btn-outline-warning" title="Modifier">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                     <a href="{%url 'generate_ordre_service_pdf' order.pk%}" class="btn btn-sm btn-outline-success" title="PDF">
+                                     <a href="{% url 'generate_pv_pdf' pv.pk %}" class="btn btn-sm btn-outline-success" title="PDF">
                                         <i class="bi bi-file-pdf"></i>
                                     </a>
-                                    <a href="{%url 'order_delete' order.pk%}"  class="btn btn-sm btn-outline-danger" title="Supprimer">
+                                    <a href="{% url 'pv_delete' pv.pk %}"  class="btn btn-sm btn-outline-danger" title="Supprimer">
                                         <i class="bi bi-trash"></i>
                                     </a>
                                 </div>

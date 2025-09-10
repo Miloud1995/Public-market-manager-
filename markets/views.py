@@ -26,6 +26,7 @@ import io
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
+from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
 
 from .models import Decompte  # adapte selon ton projet
 
@@ -110,24 +111,11 @@ def maitre_ouvrage_update(request, pk):
 
 @login_required
 def maitre_ouvrage_detail(request, pk):
-    marche = get_object_or_404(Prestataire, pk=pk)
-    services = marche.services.all()
-    maintenances = marche.maintenances.all()
-    fournitures = marche.fournitures.all()
-    ordres_service = marche.ordres_service.all()
-    decomptes = marche.decomptes.all()
-    pvs = marche.pvs.all()
-    documents = marche.documents.all()
-    
+    maitre = get_object_or_404(MaitreOuvrage, pk=pk)
+   
     return render(request, 'markets/maitre_detail.html', {
-        'marche': marche,
-        'services': services,
-        'maintenances': maintenances,
-        'fournitures': fournitures,
-        'ordres_service': ordres_service,
-        'decomptes': decomptes,
-        'pvs': pvs,
-        'documents': documents,
+        'maitre': maitre,
+       
     })
 @login_required
 def maitre_ouvrage_delete(request, pk):
@@ -183,6 +171,17 @@ def prestataire_update(request, pk):
     else:
         form = PrestataireForm(instance=prestataire)
     return render(request, 'markets/prestataire_form.html', {'form': form, 'title': 'Modifier Prestataire'})
+
+@login_required
+def prestataire_detail(request, pk):
+    prestataire = get_object_or_404(Prestataire, pk=pk)
+   
+    
+    return render(request, 'markets/prestataire_detail.html', {
+        'prestataire': prestataire,
+        
+    })
+
 
 @login_required
 def prestataire_delete(request, pk):
@@ -260,27 +259,6 @@ def marche_detail(request, pk):
         #'documents': documents,
     })
 
-@login_required
-def prestataire_detail(request, pk):
-    marche = get_object_or_404(Prestataire, pk=pk)
-    services = marche.services.all()
-    maintenances = marche.maintenances.all()
-    fournitures = marche.fournitures.all()
-    ordres_service = marche.ordres_service.all()
-    decomptes = marche.decomptes.all()
-    pvs = marche.pvs.all()
-    documents = marche.documents.all()
-    
-    return render(request, 'markets/marche_detail.html', {
-        'marche': marche,
-        'services': services,
-        'maintenances': maintenances,
-        'fournitures': fournitures,
-        'ordres_service': ordres_service,
-        'decomptes': decomptes,
-        'pvs': pvs,
-        'documents': documents,
-    })
 
 @login_required
 def marche_update(request, pk):
@@ -836,9 +814,9 @@ def generate_ordre_service_pdf(request, pk):
 
     # En-tête avec logos
     try:
-        logo_left = Image("static/img/logo.png", width=3*cm, height=3*cm)
-        logo_center = Image("static/img/royme.png", width=3*cm, height=3*cm)
-        logo_right = Image("static/img/logo.png", width=3*cm, height=3*cm)
+        logo_left = Image("static/img/logo1.png", width=3*cm, height=3*cm)
+        logo_center = Image("static/img/logo2.png", width=3*cm, height=3*cm)
+        logo_right = Image("static/img/logo3.png", width=3*cm, height=3*cm)
         header_table = Table([[logo_left, logo_center, logo_right]], colWidths=[5*cm, 5*cm, 5*cm])
         header_table.setStyle(TableStyle([('ALIGN', (0, 0), (-1, -1), 'CENTER')]))
         elements.append(header_table)
@@ -927,10 +905,10 @@ def pv_create(request):
         if form.is_valid():
             form.save()
             messages.success(request, 'PV créé avec succès.')
-            return redirect('marche_list')
+            return redirect('pv_list')
     else:
         form = PVForm()
-    return render(request, 'markets/marche_form.html', {'form': form, 'title': 'Nouveau PV'})
+    return render(request, 'markets/pv_form.html', {'form': form, 'title': 'Nouveau PV'})
 
 @login_required
 def pv_list(request):
@@ -949,3 +927,178 @@ def pv_list(request):
         'all_marches': marches,        # All Marches with related Decomptes
         'statut_choices': OrdreService.STATUT_CHOICES,
     })
+
+
+@login_required
+def pv_update(request, pk):
+    pv = get_object_or_404(PV, pk=pk)
+    if request.method == 'POST':
+        form = PVForm(request.POST, instance=pv)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'PV  mis à jour avec succès.')
+            return redirect('pv_detail', pk=pk)
+    else:
+        form = PVForm(instance=pv)
+    return render(request, 'markets/pv_form.html', {'form': form, 'title': 'Modifier PV'})
+
+
+@login_required
+def pv_detail(request, pk):
+    pv = get_object_or_404(PV, pk=pk)
+    return render(request, 'markets/pv_detail.html', {
+        'pv': pv,
+        'marche': PV.marche
+    })
+
+@login_required
+def pv_delete(request, pk):
+    pv = get_object_or_404(PV, pk=pk)
+    if request.method == 'POST':
+       pv.delete()
+       messages.success(request, 'PV supprimé avec succès.')
+       return redirect('pv_list')
+    return render(request, 'markets/confirm_delete.html', {'object': pv, 'type': 'pv'})
+
+
+@login_required
+def generate_pv_pdf(request, pk):
+    pv = get_object_or_404(PV, pk=pk)
+
+    # Préparer la réponse HTTP
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="pv_{pv.numero}.pdf"'
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=40,
+        leftMargin=40,
+        topMargin=40,
+        bottomMargin=40,
+    )
+
+    elements = []
+    styles = getSampleStyleSheet()
+
+    # === Styles personnalisés ===
+    title_style = ParagraphStyle(
+        "Title",
+        parent=styles["Heading1"],
+        alignment=TA_CENTER,
+        fontSize=14,
+        spaceAfter=20,
+        leading=18,
+    )
+    justify_style = ParagraphStyle(
+        "Justify",
+        parent=styles["Normal"],
+        alignment=TA_JUSTIFY,
+        fontSize=11,
+        leading=16,
+    )
+
+    # === Logos en haut ===
+    logo1 = Image("static/img/logo1.png", width=100, height=100)
+    logo2 = Image("static/img/logo2.png", width=100, height=100)
+    logo3 = Image("static/img/logo3.png", width=100, height=100)
+
+    logos_table = Table([[logo1, logo2, logo3]], colWidths=[150, 150, 150])
+    logos_table.setStyle(
+        TableStyle(
+            [
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 20),
+            ]
+        )
+    )
+    elements.append(logos_table)
+    elements.append(Spacer(1, 20))
+
+    # === Choix du contenu selon le type de PV ===
+    if pv.type == "reception provisoire":
+        title = f"PROCÈS VERBAL DE RÉCEPTION PROVISOIRE<br/>RELATIF AU MARCHÉ {pv.marche.type} N° {pv.numero}"
+        corps = f"""
+        Le {pv.date_pv.strftime('%d %B %Y')} ; la commission chargée de la réception provisoire du marché N° {pv.numero}, 
+        relatif à {pv.objet}, composée de :<br/><br/>
+        • {pv.signataire or ''} ({pv.fonction_signataire or ''})<br/>
+        • {pv.signataire_deux or ''} ({pv.fonction_signataire_deux or ''})<br/><br/>
+        a constaté que les prestations exécutées par la société {pv.marche.prestataire} sont terminées et conformes.<br/><br/>
+        En conséquence, la réception provisoire est prononcée.<br/><br/>
+        <b>Fait à Rabat, le {pv.date_pv.strftime('%d/%m/%Y')}</b>.
+        """
+
+    elif pv.type == "reception defintive":
+        title = f"PROCÈS VERBAL DE RÉCEPTION DÉFINITIVE<br/>RELATIF AU MARCHÉ {pv.marche.type} N° {pv.numero}"
+        corps = f"""
+        Le {pv.date_pv.strftime('%d %B %Y')} ; la commission chargée de la réception définitive du marché N° {pv.numero}, 
+        relatif à {pv.objet}, composée de :<br/><br/>
+        • {pv.signataire or ''} ({pv.fonction_signataire or ''})<br/>
+        • {pv.signataire_deux or ''} ({pv.fonction_signataire_deux or ''})<br/><br/>
+        a reconnu que toutes les prestations exécutées par la société {pv.marche.prestataire} sont conformes aux conditions du marché.<br/><br/>
+        En conséquence, la réception définitive est prononcée.<br/><br/>
+        <b>Fait à Rabat, le {pv.date_pv.strftime('%d/%m/%Y')}</b>.
+        """
+
+    elif pv.type == "reception defintive parcielle":
+        title = f"PROCÈS VERBAL DE RÉCEPTION DÉFINITIVE PARTIELLE<br/>RELATIF AU MARCHÉ {pv.marche.type} N° {pv.numero}"
+        corps = f"""
+        Le {pv.date_pv.strftime('%d %B %Y')} ; la commission chargée de la réception définitive partielle du marché N° {pv.numero}, 
+        relatif à {pv.objet}, composée de :<br/><br/>
+        • {pv.signataire or ''} ({pv.fonction_signataire or ''})<br/>
+        • {pv.signataire_deux or ''} ({pv.fonction_signataire_deux or ''})<br/><br/>
+        a reconnu que les prestations exécutées par la société {pv.marche.prestataire}, 
+        pour la période {pv.periode_debut or ''} au {pv.periode_fin or ''}, 
+        sont conformes aux conditions du marché.<br/><br/>
+        En conséquence, la réception définitive partielle est prononcée.<br/><br/>
+        <b>Fait à Rabat, le {pv.date_pv.strftime('%d/%m/%Y')}</b>.
+        """
+
+    else:
+        title = f"PROCÈS VERBAL<br/>Marché N° {pv.numero}"
+        corps = f"""
+        Ce procès-verbal a été établi le {pv.date_pv.strftime('%d %B %Y')} 
+        concernant le marché N° {pv.numero}, relatif à {pv.objet}.
+        """
+
+    # === Ajouter titre et corps ===
+    elements.append(Paragraph(title, title_style))
+    elements.append(Spacer(1, 20))
+    elements.append(Paragraph(corps, justify_style))
+    elements.append(Spacer(1, 30))
+
+    # === Signatures ===
+    elements.append(Paragraph("<b>Signé :</b>", styles["Normal"]))
+    elements.append(Spacer(1, 12))
+
+    signataires = []
+    if pv.signataire:
+        signataires.append([f"• {pv.signataire} ({pv.fonction_signataire or ''})", ""])
+    if pv.signataire_deux:
+        signataires.append([f"• {pv.signataire_deux} ({pv.fonction_signataire_deux or ''})", ""])
+    if pv.signataire_trois:
+        signataires.append([f"• {pv.signataire_trois} ({pv.fonction_signataire_trois or ''})", ""])
+
+    if signataires:
+        table = Table(signataires, colWidths=[250, 250])
+        table.setStyle(
+            TableStyle(
+                [
+                    ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+                    ("FONTSIZE", (0, 0), (-1, -1), 11),
+                    ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 20),
+                ]
+            )
+        )
+        elements.append(table)
+
+    # === Génération du PDF ===
+    doc.build(elements)
+    pdf = buffer.getvalue()
+    buffer.close()
+    response.write(pdf)
+    return response

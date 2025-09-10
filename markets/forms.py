@@ -220,12 +220,14 @@ class PVForm(forms.ModelForm):
     class Meta:
         model = PV
         fields = [
-            'numero', 'type', 'date_pv', 'objet', 'observations',
-            'marche', 'signataire', 'signataire_deux',
+            'numero', 'type', 'date_pv','periode_debut','periode_fin', 'objet', 'observations',
+            'marche', 'signataire', 'signataire_deux','fonction_signataire','fonction_signataire_deux','fonction_signataire_trois',
             'signataire_trois', 'fichier',
         ]
         widgets = {
             'date_pv': forms.DateInput(attrs={'type': 'date'}),
+            'periode_debut': forms.DateInput(attrs={'type': 'date'}),
+            'periode_fin': forms.DateInput(attrs={'type': 'date'}),
             'objet': forms.Textarea(attrs={'rows': 3}),
             'observations': forms.Textarea(attrs={'rows': 4}),
         }
@@ -244,12 +246,28 @@ class PVForm(forms.ModelForm):
                 Column('type', css_class='form-group col-md-6 mb-0'),
                 css_class='form-row'
             ),
+            
             'objet',
-            Row(
-                Column('date_pv', css_class='form-group col-md-6 mb-0'),
-                Column('marche', css_class='form-group col-md-6 mb-0'),
+             Row(
+                Column('signataire', css_class='form-group col-md-4 mb-0'),
+                Column('signataire_deux', css_class='form-group col-md-4 mb-0'),
+                Column('signataire_trois', css_class='form-group col-md-4 mb-0'),
                 css_class='form-row'
             ),
+             Row(
+                Column('fonction_signataire', css_class='form-group col-md-4 mb-0'),
+                Column('fonction_signataire_deux', css_class='form-group col-md-4 mb-0'),
+                Column('fonction_signataire_trois', css_class='form-group col-md-4 mb-0'),
+                css_class='form-row'
+            ),
+            Row(
+                Column('date_pv', css_class='form-group col-md-4 mb-0'),
+                Column('periode_debut', css_class='form-group col-md-4 mb-0'),
+                Column('periode_fin', css_class='form-group col-md-4 mb-0'),
+                
+                css_class='form-row'
+            ),
+            Column('marche', css_class='form-group col-md-6 mb-0'),
             'observations',
             Row(
                 Column('fichier', css_class='form-group col-md-6 mb-0'),

@@ -49,5 +49,9 @@ urlpatterns = [
 
     #PVs  URLs
     path('pvs/',views.pv_list, name='pv_list'),
-    path('pv/create/', views.pv_create, name='pv_create')
+    path('pv/create/', views.pv_create, name='pv_create'),
+    path('pv/<int:pk>/update/', views.pv_update, name='pv_update'),
+    path('pv/<int:pk>/', views.pv_detail, name='pv_detail'),
+    path('pv/<int:pk>/delete/', views.pv_delete, name='pv_delete'),
+    path('pv/<int:pk>/pdf/', views.generate_pv_pdf, name='generate_pv_pdf'),
 ]

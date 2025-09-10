@@ -1,11 +1,64 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-   maitre details
-</body>
-</html>
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }} - Gestion des Marchés Publics{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-6">
+ <h1 style="font-size: 20px; align-items: center; color:gray;">Détails du Prestataire  {{prestataire.nom}}</h1>
+    </div>
+    <div class="col-6">
+        
+     <div class="btn-toolbar mb-2 mb-md-0" style="float: right;">
+        <a href="{% url 'maitre_ouvrage_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Retour à la liste
+        </a>
+    </div>
+    </div>
+</div>
+   
+<div class="row">
+<div class="col-12">
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Nom</label>
+        <input class="inp" type="text" disabled="true" value="{{maitre.nom}}">
+
+    </div>
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Adresse </label>
+        <input class="inp" type="text" disabled="true" value="{{maitre.adresse}}">
+
+    </div>
+    
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Telephone </label>
+        <input class="inp" type="text" disabled="true" value="{{maitre.telephone}}">
+
+    </div>
+    
+     
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Email </label>
+        <input class="inp" type="text" disabled="true" value="{{maitre.email}}">
+
+    </div>
+
+     <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Responsable </label>
+        <input class="inp" type="text" disabled="true" value="{{maitre.responsable}}">
+
+    </div>
+
+
+    
+    
+    
+    
+    
+    
+</div>   
+
+
+{% endblock %}

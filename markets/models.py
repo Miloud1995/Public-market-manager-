@@ -248,11 +248,12 @@ class Decompte(models.Model):
 class PV(models.Model):
     """Procès-Verbal (Official Report)"""
     TYPE_CHOICES = [
-        ('reception', 'Réception'),
-        ('constat', 'Constat'),
-        ('reunion', 'Réunion'),
-        ('visite', 'Visite'),
-        ('expertise', 'Expertise'),
+        ('reception provisoire', 'Réception provisoire'),
+        ('reception defintive', 'Réception defintive'),
+        ('reception defintive', 'Réception defintive parcielle'),
+        #('reunion', 'Réunion'),
+        #('visite', 'Visite'),
+        #('expertise', 'Expertise'),
         ('autre', 'Autre'),
     ]
 
@@ -262,9 +263,14 @@ class PV(models.Model):
     objet = models.TextField(verbose_name="Objet")
     observations = models.TextField(blank=True, verbose_name="Observations")
     fichier = models.FileField(upload_to='pv/', null=True, blank=True, verbose_name="Fichier joint (PDF)")
-    signataire = models.CharField(max_length=100, null=True, blank=True, verbose_name="Signataire")
-    signataire_deux = models.CharField(max_length=100, null=True, blank=True, verbose_name="Signataire")
-    signataire_trois = models.CharField(max_length=100, null=True, blank=True, verbose_name="Signataire")
+    signataire = models.CharField(max_length=100, null=True, blank=True, verbose_name="Signataire 1")
+    signataire_deux = models.CharField(max_length=100, null=True, blank=True, verbose_name="Signataire 2")
+    signataire_trois = models.CharField(max_length=100, null=True, blank=True, verbose_name="Signataire 3")
+    periode_fin = models.DateField(null=True, blank=True, verbose_name="Période fin")
+    periode_debut = models.DateField(null=True, blank=True, verbose_name="Période début")
+    fonction_signataire = models.CharField(max_length=100, null=True, blank=True, verbose_name="Fonction du signataire")
+    fonction_signataire_deux = models.CharField(max_length=100, null=True, blank=True, verbose_name="Fonction du signataire")
+    fonction_signataire_trois = models.CharField(max_length=100, null=True, blank=True, verbose_name="Fonction du signataire")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     marche = models.ForeignKey(
