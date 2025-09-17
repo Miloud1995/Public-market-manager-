@@ -67,7 +67,8 @@
                             <th>Prestataire</th>
                             <th>Montant</th>
                             <th>Statut</th>
-                            <th>Date Signature</th>
+                            <th>Date Debut</th>
+                            <th>Date Fin</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -91,8 +92,15 @@
                                 </span>
                             </td>
                             <td>
-                                {% if marche.date_signature %}
-                                    {{ marche.date_signature|date:"d/m/Y" }}
+                                {% if marche.date_debut %}
+                                    {{ marche.date_debut|date:"d/m/Y" }}
+                                {% else %}
+                                    <span class="text-muted">Non définie</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if marche.date_fin %}
+                                    {{ marche.date_fin|date:"d/m/Y" }}
                                 {% else %}
                                     <span class="text-muted">Non définie</span>
                                 {% endif %}

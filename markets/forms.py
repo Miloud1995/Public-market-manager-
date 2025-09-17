@@ -167,7 +167,7 @@ class OrdreServiceForm(forms.ModelForm):
 class DecompteForm(forms.ModelForm):
     class Meta:
         model = Decompte
-        fields = ['numero', 'periode_debut', 'periode_fin','montant_ht','unite_de_mesure','tva', 'statut', 'marche','quantite','montant_ttc','fichier']
+        fields = ['numero', 'periode_debut', 'periode_fin','montant_ht','unite_de_mesure','tva','type','periodicite', 'statut', 'marche','quantite','montant_ttc','fichier']
         exclude = ['montant_ttc','montant_ht']
         widgets = {
             'periode_debut': forms.DateInput(attrs={'type': 'date'}),
@@ -195,11 +195,13 @@ class DecompteForm(forms.ModelForm):
             Row(
                 Column('periode_debut', css_class='form-group col-md-6 mb-0'),
                 Column('periode_fin', css_class='form-group col-md-6 mb-0'),
+                Column('periodicite', css_class='form-group col-md-6 mb-0'),
                 css_class='form-row'
             ),
            
             Row(
                 Column('marche', css_class='form-group col-md-4 mb-0'),
+                Column('type', css_class='form-group col-md-4 mb-0'),
                 Column('tva', css_class='form-group col-md-4 mb-0'),
                 css_class='form-row'
             ),
@@ -280,3 +282,25 @@ class DocumentForm(forms.ModelForm):
     class Meta:
         model = Document
         fields = ['nom', 'type', 'fichier', 'marche']
+
+    def __init__(self, *args, **kwargs):   
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+
+        self.fields['marche'].queryset = Marche.objects.all().order_by('numero')
+        self.fields['marche'].empty_label = "Sélectionnez un marché"
+        self.fields['marche'].label = "Marché associe"
+
+        self.helper.layout = Layout(
+            Row(
+                Column('nom', css_class='form-group col-md-12 mb-0'),
+               
+                css_class='form-row'
+            ),
+            
+             Row(
+                Column('type', css_class='form-group col-md-12 mb-0'),
+                css_class='form-row'
+            ),
+            
+        )

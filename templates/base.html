@@ -298,7 +298,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
+                            <a class="nav-link {% if 'pv' in request.resolver_match.url_name %}active{% endif %}" href="% url 'document_list' %">
                                 <i class="bi bi-folder"></i>
                                 Documents
                             </a>

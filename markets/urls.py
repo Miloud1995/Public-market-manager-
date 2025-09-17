@@ -54,4 +54,12 @@ urlpatterns = [
     path('pv/<int:pk>/', views.pv_detail, name='pv_detail'),
     path('pv/<int:pk>/delete/', views.pv_delete, name='pv_delete'),
     path('pv/<int:pk>/pdf/', views.generate_pv_pdf, name='generate_pv_pdf'),
+
+    #FILEs  URLs
+    path('documents/',views.document_list, name='document_list'),
+      #path('document/create/', views.document_create, name='document_create'),
+      #path('document/<int:pk>/update/', views.document_update, name='document_update'),
+     # path('document/<int:pk>/', views.document_detail, name='document_detail'),
+     # path('document/<int:pk>/delete/', views.document_delete, name='document_delete'),
+    
 ]

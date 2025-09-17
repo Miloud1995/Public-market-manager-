@@ -28,7 +28,10 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
 
-from .models import Decompte  # adapte selon ton projet
+from .models import Decompte
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+from decimal import Decimal  # adapte selon ton projet
 
 
 
@@ -323,7 +326,7 @@ def generate_marche_pdf(request, pk):
         ['Date de signature:', marche.date_signature.strftime('%d/%m/%Y') if marche.date_signature else 'Non définie'],
         ['Date de début:', marche.date_debut.strftime('%d/%m/%Y') if marche.date_debut else 'Non définie'],
         ['Date de fin:', marche.date_fin.strftime('%d/%m/%Y') if marche.date_fin else 'Non définie'],
-        ['Maître d\'ouvrage:', marche.maitre_ouvrage.nom],
+        ['Maître d\'ouvrage:', marche.maitre_ouvrage.responsable],
         ['Prestataire:', marche.prestataire.nom],
     ]
     
@@ -389,160 +392,387 @@ def generate_marche_pdf(request, pk):
     return response
 
 
+from decimal import Decimal
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from .models import Decompte
+from .forms import DecompteForm
+
+
+
+@login_required
 @login_required
 def decompte_create(request):
+    def calculer_jours_reels_annee(date_debut, date_fin):
+        """
+        Calcule le nombre de jours réels dans l'année en cours de la période.
+        Prend en compte les années bissextiles.
+        """
+        annee = date_debut.year
+        if date_debut.year != date_fin.year:
+            # Si la période s'étend sur plusieurs années, prendre l'année de début
+            annee = date_debut.year
+        
+        # Vérifier si c'est une année bissextile
+        if (annee % 4 == 0 and annee % 100 != 0) or (annee % 400 == 0):
+            return 366
+        else:
+            return 365
+    
+    def calculer_jours_par_mois_dans_periode(date_debut, date_fin):
+        """
+        Calcule le nombre de jours réels pour chaque mois dans la période donnée.
+        Retourne le nombre total de jours et un dictionnaire détaillé.
+        """
+        total_jours = 0
+        detail_mois = {}
+        
+        current_date = date_debut
+        
+        while current_date <= date_fin:
+            annee = current_date.year
+            mois = current_date.month
+            
+            # Début du mois courant
+            debut_mois = current_date.replace(day=1)
+            
+            # Fin du mois courant
+            if mois == 12:
+                fin_mois = debut_mois.replace(year=annee + 1, month=1, day=1) - relativedelta(days=1)
+            else:
+                fin_mois = debut_mois.replace(month=mois + 1, day=1) - relativedelta(days=1)
+            
+            # Calculer les jours dans ce mois pour notre période
+            debut_periode_mois = max(current_date, debut_mois)
+            fin_periode_mois = min(date_fin, fin_mois)
+            
+            jours_dans_mois = (fin_periode_mois - debut_periode_mois).days + 1
+            
+            cle_mois = f"{annee}-{mois:02d}"
+            detail_mois[cle_mois] = jours_dans_mois
+            total_jours += jours_dans_mois
+            
+            # Passer au mois suivant
+            if mois == 12:
+                current_date = current_date.replace(year=annee + 1, month=1, day=1)
+            else:
+                current_date = current_date.replace(month=mois + 1, day=1)
+        
+        return total_jours, detail_mois
+    
     if request.method == 'POST':
         form = DecompteForm(request.POST, request.FILES)
         if form.is_valid():
             try:
                 decompte = form.save(commit=False)
-                
                 if decompte.marche and decompte.periode_debut and decompte.periode_fin:
                     # Validation des dates
                     if decompte.periode_debut > decompte.periode_fin:
                         form.add_error('periode_fin', "La date de fin doit être postérieure à la date de début")
-                        return render(request, 'markets/decompte_form.html', {'form': form})
-
+                        return render(request, 'markets/decompte_form.html', {'form': form, 'title': 'Créer Décompte'})
+                    
                     if not decompte.marche.date_debut:
                         form.add_error(None, "Le marché associé doit avoir une date de début définie")
-                        return render(request, 'markets/decompte_form.html', {'form': form})
-
-                    montant_annuel = decompte.marche.montant_annual or Decimal(0)
-                    periodicite = decompte.marche.periodicite.lower() if decompte.marche.periodicite else 'annuelle'
-
-                    # Nouveau calcul proportionnel
-                    if periodicite in ['trimestrielle', 'semestrielle', 'mensuelle']:
-                        # Calcul du nombre de jours dans la période du décompte
-                        jours_periode = (decompte.periode_fin - decompte.periode_debut).days + 1
-                        
-                        # Calcul du nombre de jours dans l'année
-                        jours_annee = 366 if decompte.periode_debut.year % 4 == 0 else 365
-                        
-                        # Calcul proportionnel
-                        montant_proportionnel = (montant_annuel * Decimal(jours_periode)) / Decimal(jours_annee)
-                        decompte.montant_ht = montant_proportionnel.quantize(Decimal('0.01'))
+                        return render(request, 'markets/decompte_form.html', {'form': form, 'title': 'Créer Décompte'})
+                    
+                    # Montant annuel et application de la TVA
+                    montant_annual_ht = decompte.marche.montant_annual or Decimal(0)
+                    montant_annual_ttc = (montant_annual_ht * (Decimal('1') + decompte.tva / Decimal('100'))).quantize(Decimal('0.01'))
+                    
+                    periodicite = decompte.periodicite.lower() if decompte.periodicite else None
+                    
+                    # Calcul du montant du décompte basé sur la période réelle
+                    duree_decompte_jours = (decompte.periode_fin - decompte.periode_debut).days + 1
+                    
+                    if periodicite and periodicite == 'prorata':
+                        # MODE PRORATA : Calcul basé sur le nombre de jours réels avec prise en compte des mois
+                        if decompte.marche.date_fin:
+                            # Prorata sur la durée totale du marché
+                            duree_totale_marche = (decompte.marche.date_fin - decompte.marche.date_debut).days + 1
+                            if duree_totale_marche > 0:
+                                # Calculer les jours réels dans la période du décompte
+                                jours_reels_decompte, detail_mois_decompte = calculer_jours_par_mois_dans_periode(
+                                    decompte.periode_debut, decompte.periode_fin
+                                )
+                                
+                                decompte.montant_ttc = (montant_annual_ttc * Decimal(jours_reels_decompte) / Decimal(duree_totale_marche)).quantize(Decimal('0.01'))
+                            else:
+                                decompte.montant_ttc = Decimal('0')
+                        else:
+                            # Prorata sur une année avec calcul précis des jours
+                            jours_reels_decompte, detail_mois_decompte = calculer_jours_par_mois_dans_periode(
+                                decompte.periode_debut, decompte.periode_fin
+                            )
+                            
+                            # Calculer le nombre de jours réels dans l'année de référence
+                            jours_reels_annee = calculer_jours_reels_annee(decompte.periode_debut, decompte.periode_fin)
+                            
+                            decompte.montant_ttc = (montant_annual_ttc * Decimal(jours_reels_decompte) / Decimal(jours_reels_annee)).quantize(Decimal('0.01'))
+                    
+                    elif periodicite:
+                        # MODE PÉRIODICITÉ FIXE : Montant fixe selon la périodicité choisie
+                        if periodicite == 'trimestrielle':
+                            # Montant pour 1 trimestre complet
+                            decompte.montant_ttc = (montant_annual_ttc / Decimal('4')).quantize(Decimal('0.01'))
+                        elif periodicite == 'semestrielle':
+                            # Montant pour 1 semestre complet
+                            decompte.montant_ttc = (montant_annual_ttc / Decimal('2')).quantize(Decimal('0.01'))
+                        elif periodicite == 'mensuelle':
+                            # Montant pour 1 mois complet
+                            decompte.montant_ttc = (montant_annual_ttc / Decimal('12')).quantize(Decimal('0.01'))
+                        elif periodicite == 'annuelle':
+                            # Montant annuel complet
+                            decompte.montant_ttc = montant_annual_ttc
+                        else:
+                            # Périodicité non reconnue, utiliser le prorata précis par défaut
+                            jours_reels_decompte, detail_mois_decompte = calculer_jours_par_mois_dans_periode(
+                                decompte.periode_debut, decompte.periode_fin
+                            )
+                            jours_reels_annee = calculer_jours_reels_annee(decompte.periode_debut, decompte.periode_fin)
+                            decompte.montant_ttc = (montant_annual_ttc * Decimal(jours_reels_decompte) / Decimal(jours_reels_annee)).quantize(Decimal('0.01'))
+                    
                     else:
-                        # Pour la périodicité annuelle, on prend le montant complet
-                        decompte.montant_ht = montant_annuel.quantize(Decimal('0.01'))
-
-                    # Calcul du TTC
-                    decompte.montant_ttc = (decompte.montant_ht * (1 + decompte.tva/100)).quantize(Decimal('0.01'))
-
-                    # Vérification du reste à payer si le statut est payé
-                    if decompte.statut == 'paye':
-                        marche = decompte.marche
-                        if marche.rest_a_payer < decompte.montant_ttc:
-                            form.add_error('montant_ttc', "Le montant dépasse le reste à payer")
-                            return render(request, 'markets/decompte_form.html', {'form': form})
-                        marche.rest_a_payer -= decompte.montant_ttc
-                        marche.save()
-
+                        # Aucune périodicité définie, utiliser le prorata précis par défaut
+                        if decompte.marche.date_fin:
+                            duree_totale_marche = (decompte.marche.date_fin - decompte.marche.date_debut).days + 1
+                            if duree_totale_marche > 0:
+                                jours_reels_decompte, detail_mois_decompte = calculer_jours_par_mois_dans_periode(
+                                    decompte.periode_debut, decompte.periode_fin
+                                )
+                                decompte.montant_ttc = (montant_annual_ttc * Decimal(jours_reels_decompte) / Decimal(duree_totale_marche)).quantize(Decimal('0.01'))
+                            else:
+                                decompte.montant_ttc = Decimal('0')
+                        else:
+                            jours_reels_decompte, detail_mois_decompte = calculer_jours_par_mois_dans_periode(
+                                decompte.periode_debut, decompte.periode_fin
+                            )
+                            jours_reels_annee = calculer_jours_reels_annee(decompte.periode_debut, decompte.periode_fin)
+                            decompte.montant_ttc = (montant_annual_ttc * Decimal(jours_reels_decompte) / Decimal(jours_reels_annee)).quantize(Decimal('0.01'))
+                    
+                    # Calcul du montant HT à partir du TTC
+                    decompte.montant_ht = (decompte.montant_ttc / (Decimal('1') + decompte.tva / Decimal('100'))).quantize(Decimal('0.01'))
+                    
+                    # Vérification du reste à payer du marché
+                    marche = decompte.marche
+                    if decompte.montant_ttc > marche.rest_a_payer:
+                        form.add_error(None, f"Le montant du décompte ({decompte.montant_ttc} DH) dépasse le reste à payer du marché ({marche.rest_a_payer} DH)")
+                        return render(request, 'markets/decompte_form.html', {'form': form, 'title': 'Créer Décompte'})
+                    
+                    # Mise à jour du reste à payer du marché
+                    marche.rest_a_payer -= decompte.montant_ttc
+                    marche.save()
+                    
                     decompte.save()
-                    messages.success(request, 'Décompte créé avec succès.')
+                    
+                    messages.success(request, f'Décompte créé avec succès. Montant: {decompte.montant_ttc} DH TTC')
                     return redirect('decompte_list')
-
+                    
             except Exception as e:
                 messages.error(request, f"Une erreur est survenue : {str(e)}")
-                return render(request, 'markets/decompte_form.html', {'form': form})
+                return render(request, 'markets/decompte_form.html', {'form': form, 'title': 'Créer Décompte'})
     else:
         form = DecompteForm()
     
-    return render(request, 'markets/decompte_form.html', {'form': form})
-
+    return render(request, 'markets/decompte_form.html', {
+        'form': form, 
+        'title': 'Créer Décompte',
+        'is_update': False
+    })
+@login_required
 @login_required
 def decompte_update(request, pk):
     decompte = get_object_or_404(Decompte, pk=pk)
+    ancien_montant_ttc = decompte.montant_ttc  # Sauvegarder l'ancien montant pour ajuster le reste à payer
     
-    # Sauvegarde des anciennes valeurs
-    old_statut = decompte.statut
-    old_montant_ht = decompte.montant_ht
-    old_montant_ttc = decompte.montant_ttc
+    def calculer_jours_reels_annee(date_debut, date_fin):
+        """
+        Calcule le nombre de jours réels dans l'année en cours de la période.
+        Prend en compte les années bissextiles.
+        """
+        annee = date_debut.year
+        if date_debut.year != date_fin.year:
+            # Si la période s'étend sur plusieurs années, prendre l'année de début
+            annee = date_debut.year
+        
+        # Vérifier si c'est une année bissextile
+        if (annee % 4 == 0 and annee % 100 != 0) or (annee % 400 == 0):
+            return 366
+        else:
+            return 365
+    
+    def calculer_jours_par_mois_dans_periode(date_debut, date_fin):
+        """
+        Calcule le nombre de jours réels pour chaque mois dans la période donnée.
+        Retourne le nombre total de jours et un dictionnaire détaillé.
+        """
+        total_jours = 0
+        detail_mois = {}
+        
+        current_date = date_debut
+        
+        while current_date <= date_fin:
+            annee = current_date.year
+            mois = current_date.month
+            
+            # Début du mois courant
+            debut_mois = current_date.replace(day=1)
+            
+            # Fin du mois courant
+            if mois == 12:
+                fin_mois = debut_mois.replace(year=annee + 1, month=1, day=1) - relativedelta(days=1)
+            else:
+                fin_mois = debut_mois.replace(month=mois + 1, day=1) - relativedelta(days=1)
+            
+            # Calculer les jours dans ce mois pour notre période
+            debut_periode_mois = max(current_date, debut_mois)
+            fin_periode_mois = min(date_fin, fin_mois)
+            
+            jours_dans_mois = (fin_periode_mois - debut_periode_mois).days + 1
+            
+            cle_mois = f"{annee}-{mois:02d}"
+            detail_mois[cle_mois] = jours_dans_mois
+            total_jours += jours_dans_mois
+            
+            # Passer au mois suivant
+            if mois == 12:
+                current_date = current_date.replace(year=annee + 1, month=1, day=1)
+            else:
+                current_date = current_date.replace(month=mois + 1, day=1)
+        
+        return total_jours, detail_mois
     
     if request.method == 'POST':
-        form = DecompteForm(request.POST, instance=decompte)
+        form = DecompteForm(request.POST, request.FILES, instance=decompte)
         if form.is_valid():
             try:
-                new_decompte = form.save(commit=False)
-                
-                # Recalcul des montants si la période ou le marché change
-                if (new_decompte.marche and new_decompte.periode_debut and new_decompte.periode_fin and 
-                    (new_decompte.marche != decompte.marche or 
-                     new_decompte.periode_debut != decompte.periode_debut or
-                     new_decompte.periode_fin != decompte.periode_fin)):
-                    
+                decompte = form.save(commit=False)
+                if decompte.marche and decompte.periode_debut and decompte.periode_fin:
                     # Validation des dates
-                    if new_decompte.periode_debut > new_decompte.periode_fin:
+                    if decompte.periode_debut > decompte.periode_fin:
                         form.add_error('periode_fin', "La date de fin doit être postérieure à la date de début")
-                        return render(request, 'markets/decompte_form.html', 
-                                    {'form': form, 'title': 'Modifier Decompte'})
-
-                    if not new_decompte.marche.date_debut:
+                        return render(request, 'markets/decompte_form.html', {'form': form, 'title': 'Modifier Décompte'})
+                    
+                    if not decompte.marche.date_debut:
                         form.add_error(None, "Le marché associé doit avoir une date de début définie")
-                        return render(request, 'markets/decompte_form.html', 
-                                    {'form': form, 'title': 'Modifier Decompte'})
-
-                    montant_annuel = new_decompte.marche.montant_annual or Decimal(0)
-                    periodicite = new_decompte.marche.periodicite.lower() if new_decompte.marche.periodicite else 'annuelle'
-
-                    # Calcul proportionnel
-                    if periodicite in ['trimestrielle', 'semestrielle', 'mensuelle']:
-                        jours_periode = (new_decompte.periode_fin - new_decompte.periode_debut).days + 1
-                        jours_annee = 366 if new_decompte.periode_debut.year % 4 == 0 else 365
-                        new_decompte.montant_ht = (montant_annuel * Decimal(jours_periode) / Decimal(jours_annee)).quantize(Decimal('0.01'))
+                        return render(request, 'markets/decompte_form.html', {'form': form, 'title': 'Modifier Décompte'})
+                    
+                    # Montant annuel et application de la TVA
+                    montant_annual_ht = decompte.marche.montant_annual or Decimal(0)
+                    montant_annual_ttc = (montant_annual_ht * (Decimal('1') + decompte.tva / Decimal('100'))).quantize(Decimal('0.01'))
+                    
+                    periodicite = decompte.periodicite.lower() if decompte.periodicite else None
+                    
+                    # Calcul du montant du décompte basé sur la période réelle
+                    duree_decompte_jours = (decompte.periode_fin - decompte.periode_debut).days + 1
+                    
+                    if periodicite and periodicite == 'prorata':
+                        # MODE PRORATA : Calcul basé sur le nombre de jours réels avec prise en compte des mois
+                        if decompte.marche.date_fin:
+                            # Prorata sur la durée totale du marché
+                            duree_totale_marche = (decompte.marche.date_fin - decompte.marche.date_debut).days + 1
+                            if duree_totale_marche > 0:
+                                # Calculer les jours réels dans la période du décompte
+                                jours_reels_decompte, detail_mois_decompte = calculer_jours_par_mois_dans_periode(
+                                    decompte.periode_debut, decompte.periode_fin
+                                )
+                                
+                                decompte.montant_ttc = (montant_annual_ttc * Decimal(jours_reels_decompte) / Decimal(duree_totale_marche)).quantize(Decimal('0.01'))
+                            else:
+                                decompte.montant_ttc = Decimal('0')
+                        else:
+                            # Prorata sur une année avec calcul précis des jours
+                            jours_reels_decompte, detail_mois_decompte = calculer_jours_par_mois_dans_periode(
+                                decompte.periode_debut, decompte.periode_fin
+                            )
+                            
+                            # Calculer le nombre de jours réels dans l'année de référence
+                            jours_reels_annee = calculer_jours_reels_annee(decompte.periode_debut, decompte.periode_fin)
+                            
+                            decompte.montant_ttc = (montant_annual_ttc * Decimal(jours_reels_decompte) / Decimal(jours_reels_annee)).quantize(Decimal('0.01'))
+                    
+                    elif periodicite:
+                        # MODE PÉRIODICITÉ FIXE : Montant fixe selon la périodicité choisie
+                        if periodicite == 'trimestrielle':
+                            # Montant pour 1 trimestre complet
+                            decompte.montant_ttc = (montant_annual_ttc / Decimal('4')).quantize(Decimal('0.01'))
+                        elif periodicite == 'semestrielle':
+                            # Montant pour 1 semestre complet
+                            decompte.montant_ttc = (montant_annual_ttc / Decimal('2')).quantize(Decimal('0.01'))
+                        elif periodicite == 'mensuelle':
+                            # Montant pour 1 mois complet
+                            decompte.montant_ttc = (montant_annual_ttc / Decimal('12')).quantize(Decimal('0.01'))
+                        elif periodicite == 'annuelle':
+                            # Montant annuel complet
+                            decompte.montant_ttc = montant_annual_ttc
+                        else:
+                            # Périodicité non reconnue, utiliser le prorata précis par défaut
+                            jours_reels_decompte, detail_mois_decompte = calculer_jours_par_mois_dans_periode(
+                                decompte.periode_debut, decompte.periode_fin
+                            )
+                            jours_reels_annee = calculer_jours_reels_annee(decompte.periode_debut, decompte.periode_fin)
+                            decompte.montant_ttc = (montant_annual_ttc * Decimal(jours_reels_decompte) / Decimal(jours_reels_annee)).quantize(Decimal('0.01'))
+                    
                     else:
-                        new_decompte.montant_ht = montant_annuel.quantize(Decimal('0.01'))
-
-                    # Calcul du nouveau TTC
-                    new_decompte.montant_ttc = (new_decompte.montant_ht * (1 + new_decompte.tva/100)).quantize(Decimal('0.01'))
-
-                # Gestion du statut payé
-                if new_decompte.statut == 'paye':
-                    marche = new_decompte.marche
-                    new_montant = new_decompte.montant_ttc
-                    
-                    # Cas 1: Devenu payé
-                    if old_statut != 'paye':
-                        if marche.rest_a_payer >= new_montant:
-                            marche.rest_a_payer -= new_montant
+                        # Aucune périodicité définie, utiliser le prorata précis par défaut
+                        if decompte.marche.date_fin:
+                            duree_totale_marche = (decompte.marche.date_fin - decompte.marche.date_debut).days + 1
+                            if duree_totale_marche > 0:
+                                jours_reels_decompte, detail_mois_decompte = calculer_jours_par_mois_dans_periode(
+                                    decompte.periode_debut, decompte.periode_fin
+                                )
+                                decompte.montant_ttc = (montant_annual_ttc * Decimal(jours_reels_decompte) / Decimal(duree_totale_marche)).quantize(Decimal('0.01'))
+                            else:
+                                decompte.montant_ttc = Decimal('0')
                         else:
-                            messages.error(request, "Le montant dépasse le reste à payer.")
-                            return render(request, 'markets/decompte_form.html', 
-                                        {'form': form, 'title': 'Modifier Decompte'})
+                            jours_reels_decompte, detail_mois_decompte = calculer_jours_par_mois_dans_periode(
+                                decompte.periode_debut, decompte.periode_fin
+                            )
+                            jours_reels_annee = calculer_jours_reels_annee(decompte.periode_debut, decompte.periode_fin)
+                            decompte.montant_ttc = (montant_annual_ttc * Decimal(jours_reels_decompte) / Decimal(jours_reels_annee)).quantize(Decimal('0.01'))
                     
-                    # Cas 2: Montant modifié sur un décompte payé
-                    elif old_montant_ttc != new_montant:
-                        marche.rest_a_payer += old_montant_ttc
-                        if marche.rest_a_payer >= new_montant:
-                            marche.rest_a_payer -= new_montant
-                        else:
-                            marche.rest_a_payer -= old_montant_ttc  # Annulation
-                            messages.error(request, "Le nouveau montant dépasse le reste à payer.")
-                            return render(request, 'markets/decompte_form.html', 
-                                        {'form': form, 'title': 'Modifier Decompte'})
+                    # Calcul du montant HT à partir du TTC
+                    decompte.montant_ht = (decompte.montant_ttc / (Decimal('1') + decompte.tva / Decimal('100'))).quantize(Decimal('0.01'))
                     
+                    # Mise à jour du reste à payer du marché
+                    marche = decompte.marche
+                    
+                    # Calculer la différence entre nouveau et ancien montant
+                    difference_montant = decompte.montant_ttc - ancien_montant_ttc
+                    
+                    # Vérifier si le nouveau montant ne dépasse pas le reste à payer disponible
+                    reste_disponible = marche.rest_a_payer + ancien_montant_ttc  # Reste + ancien montant = disponible total
+                    if decompte.montant_ttc > reste_disponible:
+                        form.add_error(None, f"Le nouveau montant ({decompte.montant_ttc} DH) dépasse le reste disponible ({reste_disponible} DH)")
+                        return render(request, 'markets/decompte_form.html', {'form': form, 'title': 'Modifier Décompte'})
+                    
+                    # Ajuster le reste à payer avec la différence
+                    marche.rest_a_payer -= difference_montant
                     marche.save()
-                
-                # Cas 3: N'est plus payé
-                elif old_statut == 'paye' and new_decompte.statut != 'paye':
-                    marche = new_decompte.marche
-                    marche.rest_a_payer += old_montant_ttc
-                    marche.save()
-
-                new_decompte.save()
-                messages.success(request, 'Decompte mis à jour avec succès.')
-                return redirect('decompte_list')
-
+                    
+                    decompte.save()
+                    
+                    if difference_montant > 0:
+                        messages.success(request, f'Décompte modifié avec succès. Montant augmenté de {difference_montant} DH. Nouveau montant: {decompte.montant_ttc} DH TTC')
+                    elif difference_montant < 0:
+                        messages.success(request, f'Décompte modifié avec succès. Montant diminué de {abs(difference_montant)} DH. Nouveau montant: {decompte.montant_ttc} DH TTC')
+                    else:
+                        messages.success(request, f'Décompte modifié avec succès. Montant inchangé: {decompte.montant_ttc} DH TTC')
+                    
+                    return redirect('decompte_list')
+                    
             except Exception as e:
                 messages.error(request, f"Une erreur est survenue : {str(e)}")
-                return render(request, 'markets/decompte_form.html', 
-                            {'form': form, 'title': 'Modifier Decompte'})
+                return render(request, 'markets/decompte_form.html', {'form': form, 'title': 'Modifier Décompte'})
     else:
         form = DecompteForm(instance=decompte)
     
-    return render(request, 'markets/decompte_form.html', 
-                 {'form': form, 'title': 'Modifier Decompte'}) 
-
-
+    return render(request, 'markets/decompte_form.html', {
+        'form': form, 
+        'title': 'Modifier Décompte',
+        'decompte': decompte,
+        'is_update': True
+    })
 @login_required
 def decompte_list(request):
     
@@ -595,7 +825,7 @@ def generate_decompte_pdf(request, pk):
 
     # === Titre ===
     ws.merge_cells("A1:F1")
-    ws["A1"] = f"DÉCOMPTE PROVISOIRE N°{decompte.numero}"
+    ws["A1"] = f"DÉCOMPTE {decompte.type} N°{decompte.numero}"
     ws["A1"].font = Font(bold=True, size=14)
     ws["A1"].alignment = center
 
@@ -605,8 +835,8 @@ def generate_decompte_pdf(request, pk):
     ws["A2"].alignment = center
 
     # === En-têtes du tableau ===
-    headers = ["N° des prix", "Désignation", "Unité de mesure", "Qté",
-               "Prix unitaire hors TVA", "Prix Total"]
+    headers = ["N° des prix", "Désignation", "Unité de mesure", "Qté",'Statut',
+                "Prix Total hors TVA"]
     ws.append(headers)
 
     for col in range(1, len(headers) + 1):
@@ -619,9 +849,9 @@ def generate_decompte_pdf(request, pk):
     prix_total = decompte.montant_ht  # supposons que tu stockes le HT
     ws.append([1,
                decompte.numero,   # si tu as un champ "designation"
-               #decompte.unite,         # champ unité
+               decompte.unite_de_mesure,         # champ unité
                decompte.quantite,      # champ quantité
-               #decompte.prix_unitaire, # champ prix unitaire
+               decompte.statut, # champ prix unitaire
                prix_total])
 
     for col in range(1, 7):
@@ -1102,3 +1332,22 @@ def generate_pv_pdf(request, pk):
     buffer.close()
     response.write(pdf)
     return response
+
+
+@login_required
+def document_list(request):
+    
+    #decompte = Decompte.objects.prefetch_related('marche').all()
+    document = Document.objects.select_related('marche').all()
+    #marches = Marche.objects.prefetch_related('decomptes').all()  
+    marches = Marche.objects.select_related('document').all()
+   
+    paginator = Paginator(document, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'markets/document_list.html', {
+        'page_obj': page_obj,          # Paginated Decomptes
+        'all_marches': marches,        # All Marches with related Decomptes
+        'statut_choices': OrdreService.STATUT_CHOICES,
+    })

@@ -23,7 +23,7 @@ class MaitreOuvrage(models.Model):
         ordering = ['nom']
 
     def __str__(self):
-        return self.nom
+        return self.responsable
 
     def get_absolute_url(self):
         return reverse('maitre_ouvrage_detail', kwargs={'pk': self.pk})
@@ -72,12 +72,13 @@ class Marche(models.Model):
         ('semestrielle', 'Semestrielle'),
         ('annuelle', 'Annuelle'),
         ('ponctuelle', 'Ponctuelle'),
+        ('prorata', 'Prorata (calcul par jours)'),
     ]
 
 
     numero = models.CharField(max_length=50, unique=True, verbose_name="Référence ")
     objet = models.TextField(verbose_name="Objet du marché")
-    type = models.CharField(max_length=20, choices=TYPE_CHOICES, verbose_name="Type")
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES, verbose_name="Type",)
     montant = models.DecimalField(max_digits=15, decimal_places=2, verbose_name="Montant (DH)")
     montant_annual= models.DecimalField(max_digits=15,null=True,blank=True, decimal_places=2, verbose_name="Montant Annuel (DH)")
     rest_a_payer = models.DecimalField(max_digits=15, decimal_places=2, verbose_name="Montant (DH)")
@@ -86,11 +87,11 @@ class Marche(models.Model):
     date_debut = models.DateField(null=True, blank=True, verbose_name="Date de début")
     date_fin = models.DateField(null=True, blank=True, verbose_name="Date de fin")
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='en_cours', verbose_name="Statut")
-    maitre_ouvrage = models.ForeignKey(MaitreOuvrage, on_delete=models.CASCADE, verbose_name="Maître d'ouvrage")
-    prestataire = models.ForeignKey(Prestataire, on_delete=models.CASCADE, verbose_name="Prestataire")
+    maitre_ouvrage = models.ForeignKey(MaitreOuvrage, on_delete=models.SET_NULL,null=True,blank=True, verbose_name="Maître d'ouvrage")
+    prestataire = models.ForeignKey(Prestataire, on_delete=models.SET_NULL,null=True,blank=True, verbose_name="Prestataire")
     marque = models.CharField(max_length=100,null=True,blank=True,verbose_name="Marque")
     quantite = models.PositiveIntegerField(null= True ,blank = True , verbose_name="Quantité")
-    periodicite = models.CharField(max_length=20,null=True,blank=True, choices=PERIODICITE_CHOICES,verbose_name="Périodicité")
+    periodicite = models.CharField(max_length=20,null=True,blank=True, choices=PERIODICITE_CHOICES,verbose_name="Périodicité",default='trimestrielle',help_text="Choisir 'Prorata' pour un calcul basé sur le nombre exact de jours")
     description = models.TextField(blank=True,null= True,verbose_name="description")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -139,6 +140,7 @@ class OrdreService(models.Model):
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='en_attente', verbose_name="Statut")
     fichier = models.FileField(upload_to='ordres_service/', null=True, blank=True, verbose_name="Fichier joint (PDF)")
     observations = models.TextField(null=True, blank=True, verbose_name="Observations complémentaires")
+    
 
     marche = models.ForeignKey(
         Marche,
@@ -169,8 +171,26 @@ class Decompte(models.Model):
         ('paye', 'Payé'),
         ('rejete', 'Rejeté'),
     ]
+    TYPE_CHOICES = [
+        ('provisoire',  'Provisoire'),
+        ('definitif', 'Définitif'),
+        ('definitif partiel', 'Définitif partiel'),
+        ('autre', 'Autre'),
+    ]
+
+    PERIODICITE_CHOICES = [
+        ('hebdomadaire', 'Hebdomadaire'),
+        ('mensuelle', 'Mensuelle'),
+        ('trimestrielle', 'Trimestrielle'),
+        ('semestrielle', 'Semestrielle'),
+        ('annuelle', 'Annuelle'),
+        ('ponctuelle', 'Ponctuelle'),
+        ('prorata', 'Prorata (calcul par jours)'),
+    ]
+
 
     numero = models.CharField(max_length=50, unique=True, verbose_name="Désignation")
+    type = models.CharField(max_length=20,default='provisoire', choices=TYPE_CHOICES, verbose_name="Type de decompte")
     periode_debut = models.DateField(null=True, blank=True, verbose_name="Période début")
     periode_fin = models.DateField(null=True, blank=True, verbose_name="Période fin")
     montant_ht = models.DecimalField(max_digits=15,decimal_places=2, verbose_name="Montant HT (DH)")
@@ -181,6 +201,7 @@ class Decompte(models.Model):
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='brouillon', verbose_name="Statut")
     fichier = models.FileField(upload_to='decompte/', null=True, blank=True, verbose_name="Fichier joint (PDF)")
     description = models.TextField(blank=True, null=True, verbose_name=" description")
+    periodicite = models.CharField(max_length=20,null=True,blank=True, choices=PERIODICITE_CHOICES,verbose_name="Périodicité",default='trimestrielle',help_text="Choisir 'Prorata' pour un calcul basé sur le nombre exact de jours")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     marche = models.ForeignKey(
@@ -304,7 +325,8 @@ class Document(models.Model):
     type = models.CharField(max_length=20, choices=TYPE_CHOICES, blank=True, verbose_name="Type")
     fichier = models.FileField(upload_to='documents/%Y/%m/', verbose_name="Fichier")
     taille = models.PositiveIntegerField(null=True, blank=True, verbose_name="Taille (bytes)")
-    marche = models.ForeignKey(Marche, on_delete=models.CASCADE, related_name='documents', verbose_name="Marché")
+    date_doc = models.DateField(null=True, blank=True, verbose_name="Date du document")
+    marche = models.ForeignKey(Marche, on_delete=models.CASCADE, related_name='documents', verbose_name="Marché",null=True)
     uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name="Téléchargé par")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
