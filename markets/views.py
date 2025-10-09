@@ -37,12 +37,12 @@ from decimal import Decimal  # adapte selon ton projet
 
 from .models import (
     MaitreOuvrage, Prestataire, Marche, 
-     OrdreService, Decompte, PV, Document
+     OrdreService, Decompte, PV, Document,Acompte
 )
 from .forms import (
     MaitreOuvrageForm, PrestataireForm, MarcheForm,  
     OrdreServiceForm, DecompteForm, 
-    PVForm, DocumentForm
+    PVForm, DocumentForm, AcompteForm
 )
 
 @login_required
@@ -938,7 +938,10 @@ def decompte_detail(request, pk):
     })
 
 
-
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from .models import Acompte, Marche
 
 ########"""
 
@@ -1351,3 +1354,87 @@ def document_list(request):
         'all_marches': marches,        # All Marches with related Decomptes
         'statut_choices': OrdreService.STATUT_CHOICES,
     })
+
+
+
+@login_required
+def document_create(request):
+    if request.method == 'POST':
+        form = DocumentForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Document créé avec succès.')
+            return redirect('document_list')
+    else:
+        form = DocumentForm()
+    return render(request, 'markets/document_form.html', {'form': form, 'title': 'Nouveau Document'})
+
+  
+@login_required
+def document_update(request, pk):
+    document = get_object_or_404(Document, pk=pk)
+    if request.method == 'POST':
+        form = DocumentForm(request.POST, instance=document)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Document  mis à jour avec succès.')
+            return redirect('pv_detail', pk=pk)
+    else:
+        form = DocumentForm(instance=document)
+    return render(request, 'markets/document_form.html', {'form': form, 'title': 'Modifier Document'})
+@login_required
+def document_detail(request, pk):
+    document = get_object_or_404(Document, pk=pk)
+    return render(request, 'markets/document_detail.html', {
+        'document': document,
+        'marche': Document.marche
+    })
+
+@login_required
+def document_delete(request, pk):
+    document = get_object_or_404(Document, pk=pk)
+    if request.method == 'POST':
+       document.delete()
+       messages.success(request, 'Document supprimé avec succès.')
+       return redirect('document_list')
+    return render(request, 'markets/confirm_delete.html', {'object': document, 'type': 'document'})
+
+
+@login_required
+def acompte_list(request):
+    try:
+        # Get all acomptes with their related marche
+        acomptes = Acompte.objects.select_related('marche').all()
+        
+        # Pagination
+        paginator = Paginator(acomptes, 10)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        hi = 'hi'
+
+        return render(request, 'markets/acompte_list.html', {
+            'page_obj': page_obj,
+            'hi' :hi
+        })
+    except Exception as e:
+        print(f"Error in acompte_list: {e}")  # Voir l'erreur dans la console
+        # Pour debug, retourner une réponse simple
+        from django.http import HttpResponse
+        return HttpResponse(f"Error: {e}")
+
+
+@login_required
+def acompte_create(request):
+    if request.method == 'POST':
+        form = AcompteForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Acompte créé avec succès.')
+            return redirect('acompte_list')
+    else:
+        form = AcompteForm()
+    return render(request, 'markets/acompte_form.html', {'form': form, 'title': 'Nouveau Acompte'})
+
+
+
+    

@@ -102,7 +102,7 @@ class Marche(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.numero} - {self.objet[:50]}"
+        return f"{self.numero}"
 
     def get_absolute_url(self):
         return reverse('marche_detail', kwargs={'pk': self.pk})
@@ -209,6 +209,13 @@ class Decompte(models.Model):
         on_delete=models.CASCADE,  
         related_name='decomptes',
         null=True
+    )
+    acompte = models.OneToOneField(
+        'Acompte',
+        on_delete=models.CASCADE,
+        related_name='decompte',
+        null=True,
+        blank=True
     )
 
 
@@ -343,3 +350,37 @@ class Document(models.Model):
         if self.fichier:
             self.taille = self.fichier.size
         super().save(*args, **kwargs)
+
+        
+class Acompte(models.Model):
+    marche = models.ForeignKey(
+        'Marche',
+        on_delete=models.CASCADE,
+        related_name='acomptes',
+        verbose_name="Marché"
+    )
+    numero = models.CharField(max_length=50, unique=True, verbose_name="Numéro d'acompte")
+    objet = models.TextField(blank=True, null=True, verbose_name="Objet de l'acompte")
+    date_acompte = models.DateField(verbose_name="Date de l'acompte")
+    periode_debut = models.DateField(verbose_name="Période début")
+    periode_fin = models.DateField(verbose_name="Période fin")
+    pourcentage_realisation = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="Taux de réalisation (%)")
+    document_justificatif = models.FileField(upload_to='acomptes/', blank=True, null=True, verbose_name="Document justificatif (PDF)")
+    observation = models.TextField(blank=True, null=True, verbose_name="Observations")
+    statut = models.CharField(
+        max_length=20,
+        choices=[
+            ('en_attente', 'En attente'),
+            ('valide', 'Validé'),
+            ('rejete', 'Rejeté'),
+        ],
+        default='en_attente',
+        verbose_name="Statut"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Acompte {self.numero} - {self.marche.objet}"  # Correction : self.numero au lieu de self.reference
+
+    def get_absolute_url(self):
+        return reverse('acompte_detail', kwargs={'pk': self.pk})

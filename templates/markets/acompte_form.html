@@ -6,7 +6,7 @@
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">{{ title }}</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
-        <a href="{% url 'decompte_list' %}" class="btn btn-outline-secondary">
+        <a href="{% url 'acompte_list' %}" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left"></i>
             Retour à la liste
         </a>
@@ -16,7 +16,7 @@
     <div class="col-lg-8">
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title mb-0">Informations du Decompte</h5>
+                <h5 class="card-title mb-0">Informations d' Acompte</h5>
             </div>
             <div class="card-body">
                 {% crispy form %}

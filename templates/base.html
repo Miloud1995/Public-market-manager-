@@ -45,6 +45,7 @@
         }
         
         .sidebar {
+            
             min-height: calc(100vh - 56px);
             background: white;
             box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
@@ -250,7 +251,7 @@
         <div class="row">
             {% if user.is_authenticated %}
             <!-- Sidebar -->
-            <nav class="col-md-3 col-lg-2 d-md-block sidebar">
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar" >
                 <div class="position-sticky pt-3">
                     <ul class="nav flex-column">
                         <li class="nav-item">
@@ -286,6 +287,12 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link {% if 'acompte' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'acompte_list' %}">
+                                <i class="bi bi-calculator"></i>
+                                Acomptes
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link {% if 'decompte' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'decompte_list' %}">
                                 <i class="bi bi-calculator"></i>
                                 Décomptes
@@ -298,7 +305,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if 'pv' in request.resolver_match.url_name %}active{% endif %}" href="% url 'document_list' %">
+                            <a class="nav-link {% if 'document' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'document_list' %}">
                                 <i class="bi bi-folder"></i>
                                 Documents
                             </a>
@@ -323,6 +330,8 @@
                 {% endblock %}
             </main>
         </div>
+
+       
     </div>
 
     <!-- Bootstrap JS -->
@@ -331,5 +340,25 @@
     
     {% block extra_js %}
     {% endblock %}
+
+
+
+
+   <footer class="footer mt-auto py-3 bg-white shadow-sm  " >
+        <div class="container text-center">
+            <div class="d-flex flex-column flex-md-row justify-content-center align-items-center">
+                <!-- Logo -->
+                <img src="{% static 'img/logo.png' %}" alt="logo" class="img-fluid me-2" style="max-height: 50px;">
+                
+                <!-- Texte -->
+                <div>
+                    <p class="mb-1 fw-bold">Trésorier Général du Royaume</p>
+                    <p class="mb-0 text-muted">
+                        &copy; 2025 - All rights reserved | Developed by <a href="https://github.com/Miloud1995" target="_blank" class="text-decoration-none">Mouloud amri</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>  
 </body>
 </html>

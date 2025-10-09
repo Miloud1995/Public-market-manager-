@@ -3,7 +3,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Submit, Row, Column, Div
 from .models import (
     MaitreOuvrage, Prestataire, Marche, 
-     OrdreService, Decompte, PV, Document
+     OrdreService, Decompte, PV, Document,Acompte
 )
 
 class MaitreOuvrageForm(forms.ModelForm):
@@ -167,57 +167,60 @@ class OrdreServiceForm(forms.ModelForm):
 class DecompteForm(forms.ModelForm):
     class Meta:
         model = Decompte
-        fields = ['numero', 'periode_debut', 'periode_fin','montant_ht','unite_de_mesure','tva','type','periodicite', 'statut', 'marche','quantite','montant_ttc','fichier']
-        exclude = ['montant_ttc','montant_ht']
+        fields = [
+            'numero', 'periode_debut', 'periode_fin', 'periodicite',
+            'marche', 'acompte', 'type', 'tva', 'unite_de_mesure',
+            'quantite', 'statut', 'fichier'
+        ]
+
         widgets = {
             'periode_debut': forms.DateInput(attrs={'type': 'date'}),
             'periode_fin': forms.DateInput(attrs={'type': 'date'}),
             'marche': forms.Select(attrs={'class': 'form-control'}),
+            'acompte': forms.Select(attrs={'class': 'form-control'}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.helper = FormHelper()
-        
-         #self.fields['montant_ttc'].widget.attrs.update({'step': '0.1'})
 
-        
+        # ✅ Make sure the field exists before filtering
+        if 'acompte' in self.fields:
+            self.fields['acompte'].queryset = Acompte.objects.filter(decompte__isnull=True)
+            self.fields['acompte'].label = "Acompte associé"
+
+        # ✅ Marché dropdown
         self.fields['marche'].queryset = Marche.objects.all().order_by('numero')
-        self.fields['marche'].empty_label = "Sélectionnez un marché"  # Custom empty label
-        self.fields['marche'].label = "Marché associé"  # Custom label
+        self.fields['marche'].empty_label = "Sélectionnez un marché"
+        self.fields['marche'].label = "Marché associé"
+
+        # ✅ Layout configuration (crispy-forms)
+        self.helper = FormHelper()
         self.helper.layout = Layout(
-             Row(
-                Column('numero', css_class='form-group col-md-6 mb-0'),
-                Column('statut', css_class='form-group col-md-6 mb-0'),
-                css_class='form-row'
-            ),
-            'objet',
             Row(
-                Column('periode_debut', css_class='form-group col-md-6 mb-0'),
-                Column('periode_fin', css_class='form-group col-md-6 mb-0'),
-                Column('periodicite', css_class='form-group col-md-6 mb-0'),
-                css_class='form-row'
-            ),
-           
-            Row(
-                Column('marche', css_class='form-group col-md-4 mb-0'),
+                Column('numero', css_class='form-group col-md-4 mb-0'),
+                Column('statut', css_class='form-group col-md-4 mb-0'),
                 Column('type', css_class='form-group col-md-4 mb-0'),
-                Column('tva', css_class='form-group col-md-4 mb-0'),
-                css_class='form-row'
             ),
             Row(
+                Column('periode_debut', css_class='form-group col-md-4 mb-0'),
+                Column('periode_fin', css_class='form-group col-md-4 mb-0'),
+                Column('periodicite', css_class='form-group col-md-4 mb-0'),
+            ),
+            Row(
+                Column('marche', css_class='form-group col-md-6 mb-0'),
+                Column('acompte', css_class='form-group col-md-6 mb-0'),
+            ),
+            Row(
+                Column('tva', css_class='form-group col-md-4 mb-0'),
                 Column('unite_de_mesure', css_class='form-group col-md-4 mb-0'),
                 Column('quantite', css_class='form-group col-md-4 mb-0'),
-                css_class='form-row'
             ),
-            Row('description', css_class='form-group col-md-12 mb-0'),
-            Column('fichier', css_class='form-group col-md-4 mb-0'),
-            
-            
-           
-            
+            Row(
+                Column('fichier', css_class='form-group col-md-12 mb-0'),
+            ),
             Submit('submit', 'Enregistrer', css_class='btn btn-primary')
         )
+        
 class PVForm(forms.ModelForm):
     class Meta:
         model = PV
@@ -281,7 +284,7 @@ class PVForm(forms.ModelForm):
 class DocumentForm(forms.ModelForm):
     class Meta:
         model = Document
-        fields = ['nom', 'type', 'fichier', 'marche']
+        fields = ['nom', 'type', 'fichier', 'marche','date_doc','uploaded_by']
 
     def __init__(self, *args, **kwargs):   
         super().__init__(*args, **kwargs)
@@ -302,5 +305,86 @@ class DocumentForm(forms.ModelForm):
                 Column('type', css_class='form-group col-md-12 mb-0'),
                 css_class='form-row'
             ),
+             Row(
+                Column('date_doc', css_class='form-group col-md-12 mb-0'),
+                css_class='form-row'
+            ),
             
+             Row(
+                Column('uploaded_by', css_class='form-group col-md-12 mb-0'),
+                css_class='form-row'
+            ),
+             Row(
+                Column('marche', css_class='form-group col-md-12 mb-0'),
+                css_class='form-row'
+            ),
+             Row(
+                Column('fichier', css_class='form-group col-md-12 mb-0'),
+                css_class='form-row'
+            ),
+
+             Submit('submit', 'Enregistrer', css_class='btn btn-primary')  
+            
+        )
+
+from django import forms
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Layout, Row, Column, Submit
+from .models import Acompte, Marche
+
+class AcompteForm(forms.ModelForm):
+    class Meta:
+        model = Acompte
+        fields = [
+            'numero',
+            'objet',
+            'statut',
+            'date_acompte',
+            'periode_debut',
+            'periode_fin',
+            'marche',
+            'pourcentage_realisation',
+            'observation',
+            'document_justificatif',
+        ]
+
+        widgets = {
+            'periode_debut': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'periode_fin': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'date_acompte': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'marche': forms.Select(attrs={'class': 'form-control'}),
+            'observation': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+            'objet': forms.TextInput(attrs={'class': 'form-control'}),
+            'pourcentage_realisation': forms.NumberInput(attrs={'step': '0.1', 'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields['marche'].queryset = Marche.objects.all().order_by('numero')
+        self.fields['marche'].empty_label = "Sélectionnez un marché"
+        self.fields['marche'].label = "Marché associé"
+
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            Row(
+                Column('numero', css_class='form-group col-md-4 mb-0'),
+                Column('statut', css_class='form-group col-md-4 mb-0'),
+                Column('marche', css_class='form-group col-md-4 mb-0'),
+                css_class='form-row'
+            ),
+            'objet',
+            Row(
+                Column('date_acompte', css_class='form-group col-md-4 mb-0'),
+                Column('periode_debut', css_class='form-group col-md-4 mb-0'),
+                Column('periode_fin', css_class='form-group col-md-4 mb-0'),
+                css_class='form-row'
+            ),
+            Row(
+                Column('pourcentage_realisation', css_class='form-group col-md-6 mb-0'),
+                Column('document_justificatif', css_class='form-group col-md-6 mb-0'),
+                css_class='form-row'
+            ),
+            Row('observation', css_class='form-group col-md-12 mb-0'),
+            Submit('submit', 'Enregistrer', css_class='btn btn-primary mt-3')
         )

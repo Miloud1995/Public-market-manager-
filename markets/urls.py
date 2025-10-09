@@ -57,9 +57,17 @@ urlpatterns = [
 
     #FILEs  URLs
     path('documents/',views.document_list, name='document_list'),
-      #path('document/create/', views.document_create, name='document_create'),
-      #path('document/<int:pk>/update/', views.document_update, name='document_update'),
-     # path('document/<int:pk>/', views.document_detail, name='document_detail'),
-     # path('document/<int:pk>/delete/', views.document_delete, name='document_delete'),
+    path('document/create/', views.document_create, name='document_create'),
+    path('document/<int:pk>/update/', views.document_update, name='document_update'),
+    path('document/<int:pk>/', views.document_detail, name='document_detail'),
+    path('document/<int:pk>/delete/', views.document_delete, name='document_delete'),
+
+    #decompte URLs
+    path('acomptes/', views.acompte_list, name='acompte_list'),
+    path('acompte/create/', views.acompte_create, name='acompte_create'),
+    #path('decompte/<int:pk>/pdf/', views.generate_decompte_pdf, name='generate_decompte_pdf'),
+    #path('decompte/<int:pk>/delete/', views. decompte_delete, name='decompte_delete'),
+    #path('decompte/<int:pk>/update/', views.decompte_update, name='decompte_update'),
+    #path('decompte/<int:pk>/', views.decompte_detail, name='decompte_detail'),
     
 ]
