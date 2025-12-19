@@ -14,10 +14,18 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 #DEBUG = config('DEBUG', default=True, cast=bool)
-DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-allowed_hosts = os.getenv('ALLOWED_HOSTS', '')
-ALLOWED_HOSTS = [host.strip() for host in allowed_hosts.split(',') if host.strip()]
+DEBUG = False
+
+ALLOWED_HOSTS = [
+    '10.96.197.190',
+    'localhost',
+    '127.0.0.1',
+]
+#DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+
+#allowed_hosts = os.getenv('ALLOWED_HOSTS', '')
+#ALLOWED_HOSTS = [host.strip() for host in allowed_hosts.split(',') if host.strip()]
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',

@@ -31,6 +31,11 @@
         <input class="inp" type="text" disabled="true" value="{{prestataire.adresse}}">
 
     </div>
+     <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Representant </label>
+        <input class="inp" type="text" disabled="true" value="{{prestataire.representant}}">
+
+    </div>
     
     <div class="Form-group" style="margin-top: 15px;"> 
         <label class="labell" >Telephone </label>
@@ -57,7 +62,38 @@
         <input class="inp" type="text" disabled="true" value="{{prestataire.numero_registre}}">
 
     </div>
+    {%if prestataire.compte%}
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >compte </label>
+        <input class="inp" type="text" disabled="true" value="{{prestataire.compte}}">
 
+    </div>
+    {%endif%}
+
+     {%if prestataire.capital%}
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >compte </label>
+        <input class="inp" type="text" disabled="true" value="{{prestataire.capital}}">
+
+    </div>
+    {%endif%}
+
+     {%if prestataire.cnss%}
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >CNSS </label>
+        <input class="inp" type="text" disabled="true" value="{{prestataire.cnss}}">
+
+    </div>
+    {%endif%}
+
+
+     {%if prestataire.patente%}
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Patente </label>
+        <input class="inp" type="text" disabled="true" value="{{prestataire.patente}}">
+
+    </div>
+    {%endif%}
    
     
     

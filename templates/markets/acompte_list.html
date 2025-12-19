@@ -7,7 +7,7 @@
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     
     <div class="btn-toolbar mb-2 mb-md-0" >
-        <a href="#" class="btn btn-primary">
+        <a href="{% url 'acompte_create' %}" class="btn btn-primary">
             <i class="bi bi-plus-circle"></i>
             Nouveau Acompte
         </a>
@@ -60,16 +60,14 @@
 
                             <td>
                                 <div class="btn-group" role="group">
-                                    <a  class="btn btn-sm btn-outline-primary" href="#" title="Voir">
+                                    <a href="{% url 'acompte_detail' acompte.pk %}" class="btn btn-sm btn-outline-primary" title="Voir">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    <a  href="#" class="btn btn-sm btn-outline-warning" title="Modifier">
+                                    <a  href="{% url 'acompte_update' acompte.pk %}" class="btn btn-sm btn-outline-warning" title="Modifier">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                     <a href="#" class="btn btn-sm btn-outline-success" title="PDF">
-                                        <i class="bi bi-file-pdf"></i>
-                                    </a>
-                                    <a href="#"  class="btn btn-sm btn-outline-danger" title="Supprimer">
+                                    
+                                    <a href="{% url 'acompte_delete' acompte.pk %}"  class="btn btn-sm btn-outline-danger" title="Supprimer">
                                         <i class="bi bi-trash"></i>
                                     </a>
                                 </div>

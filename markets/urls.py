@@ -62,12 +62,28 @@ urlpatterns = [
     path('document/<int:pk>/', views.document_detail, name='document_detail'),
     path('document/<int:pk>/delete/', views.document_delete, name='document_delete'),
 
-    #decompte URLs
+    #acompte URLs
     path('acomptes/', views.acompte_list, name='acompte_list'),
     path('acompte/create/', views.acompte_create, name='acompte_create'),
     #path('decompte/<int:pk>/pdf/', views.generate_decompte_pdf, name='generate_decompte_pdf'),
-    #path('decompte/<int:pk>/delete/', views. decompte_delete, name='decompte_delete'),
-    #path('decompte/<int:pk>/update/', views.decompte_update, name='decompte_update'),
-    #path('decompte/<int:pk>/', views.decompte_detail, name='decompte_detail'),
+    path('acompte/<int:pk>/delete/', views. acompte_delete, name='acompte_delete'),
+    path('acompte/<int:pk>/update/', views.acompte_update, name='acompte_update'),
+    path('acompte/<int:pk>/', views.acompte_detail, name='acompte_detail'),
+
+    #Signataires URLs
+    path('signataires/', views.signataire_list, name='signataire_list'),
+    path('signataire/create/', views.signataire_create, name='signataire_create'),
+    #path('signataire/<int:pk>/delete/', views. signataire_delete, name='signataire_delete'),
+    path('signataire/<int:pk>/update/', views.signataire_update, name='signataire_update'),
+    path('signataire/<int:pk>/', views.signataire_detail, name='signataire_detail'),
+
+
+    path('lignes/',views.ligne_list, name='ligne_list'),
+    path('ligne/create/', views.ligne_create, name='ligne_create'),
+    path('ligne/<int:pk>/update/', views.ligne_update, name='ligne_update'),
+    path('ligne/<int:pk>/', views.ligne_detail, name='ligne_detail'),
+    path('ligne/<int:pk>/delete/', views.ligne_delete, name='ligne_delete'),
+    
+
     
 ]

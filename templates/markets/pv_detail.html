@@ -45,24 +45,40 @@
         <input class="inp" type="date" disabled="true" value='{{pv.date_pv|date:"Y-m-d"}}'>
 
     </div>
-
-    
+   {%if pv.peroid_debut%}
     <div class="Form-group" style="margin-top: 15px;"> 
-        <label class="labell" >Signataire </label>
-        <input class="inp" type="text" disabled="true" value="{{pv.signataire}}">
+        <label class="labell" >Peroid_debut </label>
+        <input class="inp" type="date" disabled="true" value='{{pv.peroid_debut|date:"Y-m-d"}}'>
 
     </div>
+    {%endif%}
+     {%if pv.peroid_fin%}
     <div class="Form-group" style="margin-top: 15px;"> 
-        <label class="labell" >Signataire 2</label>
-        <input class="inp" type="text" disabled="true" value="{{pv.signataire_deux}}">
+        <label class="labell" >Peroid_fin </label>
+        <input class="inp" type="date" disabled="true" value='{{pv.peroid_fin|date:"Y-m-d"}}'>
 
     </div>
+    {%endif%}
     <div class="Form-group" style="margin-top: 15px;"> 
-        <label class="labell" >Signataire 3</label>
-        <input class="inp" type="text" disabled="true" value="{{pv.signataire_trois}}">
+        <label class="labell" >Marché associé </label>
+        <input class="inp" type="text" disabled="true" value='{{pv.marche}}'>
 
     </div>
-    
+    <h4 class="mt-3">
+      Signataires
+    </h4>
+    {%if pv.signataires.all%}
+       <ul>
+        {%for signataire in pv.signataires.all%}
+         <li>
+            {{signataire.nom}} ({{signataire.fonction}})
+         </li>
+         {%endfor%}
+       </ul>
+    {%else%}
+    <p class="text-muted">Aucun signataire associé</p>
+    {%endif%}
+
 
      {%if order.observation%}
      <div class="Form-group" style="margin-top: 15px;"> 

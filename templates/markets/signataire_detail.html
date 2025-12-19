@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }} - Gestion des Marchés Publics{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-6">
+ <h1 style="font-size: 20px; align-items: center; color:gray;">Détails d'acompte N°{{acompte.numero}}</h1>
+    </div>
+    <div class="col-6">
+        
+     <div class="btn-toolbar mb-2 mb-md-0" style="float: right;">
+        <a href="{% url 'signataire_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Retour à la liste
+        </a>
+    </div>
+    </div>
+</div>
+   
+<div class="row">
+<div class="col-6">
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Nom du Signataire </label>
+        <input class="inp" type="text" disabled="true" value="{{signataire.nom}}">
+
+    </div>
+     {%if signataire.fonction%}
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Fonction</label>
+        <input class="inp" type="text" disabled="true" value="{{signataire.fonction}}">
+
+    </div>
+    {%endif%}
+    {%if siganatire.telephone%}
+     <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Telephone</label>
+        <input class="inp" type="text" disabled="true" value="{{signataire.telephone}}">
+
+    </div>
+    {%endif%}
+    {%if signataire.email%}
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Email</label>
+        <input class="inp" type="text" disabled="true" value="{{signataire.email}}">
+
+    </div>
+    
+     {%endif%}
+    
+
+
+
+
+</div>   
+     
+
+</div>
+
+
+
+
+
+
+
+
+
+
+{% endblock %}

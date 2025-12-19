@@ -266,6 +266,12 @@
                                 Marchés
                             </a>
                         </li>
+                         <li class="nav-item">
+                            <a class="nav-link {% if 'ligne' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'ligne_list' %}">
+                                <i class="bi bi-file-text"></i>
+                                Lignes des Marché
+                            </a>
+                        </li>
                         <li class="nav-item">
                             <a class="nav-link {% if 'prestataire' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'prestataire_list' %}">
                                 <i class="bi bi-people"></i>
@@ -302,6 +308,12 @@
                             <a class="nav-link {% if 'pv' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'pv_list' %}">
                                 <i class="bi bi-file-earmark-check"></i>
                                 Procès-Verbaux
+                            </a>
+                        </li>
+                         <li class="nav-item">
+                            <a class="nav-link {% if 'signataire' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'signataire_list' %}">
+                                <i class="bi bi-pencil"></i>
+                                Signatiares
                             </a>
                         </li>
                         <li class="nav-item">

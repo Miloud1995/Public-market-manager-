@@ -32,10 +32,15 @@ class Prestataire(models.Model):
     """Service Provider/Contractor"""
     nom = models.CharField(max_length=200, verbose_name="Nom de l'entreprise")
     adresse = models.TextField(blank=True, verbose_name="Adresse")
+    representant = models.CharField(blank=True, verbose_name="Répresentant")
     telephone = models.CharField(max_length=20, blank=True, verbose_name="Téléphone")
     email = models.EmailField(blank=True, verbose_name="Email")
+    cnss = models.CharField(blank=True, verbose_name="CNSS")
+    patente = models.CharField(blank=True, verbose_name="patente")
+    compte = models.CharField(blank=True , verbose_name="compte")
     specialite = models.CharField(max_length=100, blank=True, verbose_name="Spécialité")
     numero_registre = models.CharField(max_length=50, blank=True, verbose_name="Numéro de registre")
+    capital = models.CharField(max_length=100, blank=True, verbose_name="Capital")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -49,6 +54,10 @@ class Prestataire(models.Model):
 
     def get_absolute_url(self):
         return reverse('prestataire_detail', kwargs={'pk': self.pk})
+    
+
+
+
 
 class Marche(models.Model):
     """Public Market/Contract"""
@@ -58,7 +67,13 @@ class Marche(models.Model):
         ('services', 'Services'),
         ('maintenance', 'Maintenance'),
     ]
-    
+    TYPE_EXC_CHOICES = [
+        ('reconductible','Reconductible'),
+        ('cadre','Cadre'),
+        ('alloti','Alloti'),
+        ('conception_realisation','Conception-Réalisation'),
+        ('tranches_conditionnelles','Tranches_conditionnelles'),
+    ]
     STATUT_CHOICES = [
         ('en_cours', 'En cours'),
         ('termine', 'Terminé'),
@@ -81,7 +96,7 @@ class Marche(models.Model):
     type = models.CharField(max_length=20, choices=TYPE_CHOICES, verbose_name="Type",)
     montant = models.DecimalField(max_digits=15, decimal_places=2, verbose_name="Montant (DH)")
     montant_annual= models.DecimalField(max_digits=15,null=True,blank=True, decimal_places=2, verbose_name="Montant Annuel (DH)")
-    rest_a_payer = models.DecimalField(max_digits=15, decimal_places=2, verbose_name="Montant (DH)")
+    rest_a_payer = models.DecimalField(max_digits=15, decimal_places=2, verbose_name="Rest a payer (DH)")
     prix_unitaire = models.DecimalField(max_digits=10, decimal_places=2,null=True,blank=True, verbose_name="Prix unitaire (DH)")
     date_signature = models.DateField(null=True, blank=True, verbose_name="Date de signature")
     date_debut = models.DateField(null=True, blank=True, verbose_name="Date de début")
@@ -111,6 +126,24 @@ class Marche(models.Model):
         if not self.pk:  
             self.rest_a_payer = self.montant
         super().save(*args, **kwargs)
+
+
+
+from django.db import models
+
+class Ligne(models.Model):
+    marche = models.ForeignKey("Marche", on_delete=models.CASCADE, related_name="lignes")
+    numero_prix = models.CharField(max_length=50)
+    designation = models.TextField()
+    unite_mesure = models.CharField(max_length=50)
+    quantite = models.DecimalField(max_digits=10, decimal_places=2)
+    prix_unitaire = models.DecimalField(max_digits=15, decimal_places=2)
+
+    def prix_total(self):
+        return self.quantite * self.prix_unitaire
+
+    def __str__(self):
+        return f"Ligne {self.numero_prix} - {self.designation[:30]}"
 
 class OrdreService(models.Model):
     """Ordre de service"""
@@ -179,12 +212,10 @@ class Decompte(models.Model):
     ]
 
     PERIODICITE_CHOICES = [
-        ('hebdomadaire', 'Hebdomadaire'),
         ('mensuelle', 'Mensuelle'),
         ('trimestrielle', 'Trimestrielle'),
         ('semestrielle', 'Semestrielle'),
         ('annuelle', 'Annuelle'),
-        ('ponctuelle', 'Ponctuelle'),
         ('prorata', 'Prorata (calcul par jours)'),
     ]
 
@@ -195,13 +226,13 @@ class Decompte(models.Model):
     periode_fin = models.DateField(null=True, blank=True, verbose_name="Période fin")
     montant_ht = models.DecimalField(max_digits=15,decimal_places=2, verbose_name="Montant HT (DH)")
     tva = models.DecimalField(max_digits=15,decimal_places=2,default=20,verbose_name="TVA (%)")
-    unite_de_mesure = models.CharField(max_length=10, blank=True, null=True, verbose_name="Unité de mesure")
     quantite = models.PositiveIntegerField(null=True, blank=True, verbose_name="Quantité")
-    montant_ttc = models.DecimalField(max_digits=15,decimal_places=2,editable=False)
+    montant_ttc = models.DecimalField(max_digits=15,decimal_places=2,editable=True)
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='brouillon', verbose_name="Statut")
     fichier = models.FileField(upload_to='decompte/', null=True, blank=True, verbose_name="Fichier joint (PDF)")
     description = models.TextField(blank=True, null=True, verbose_name=" description")
     periodicite = models.CharField(max_length=20,null=True,blank=True, choices=PERIODICITE_CHOICES,verbose_name="Périodicité",default='trimestrielle',help_text="Choisir 'Prorata' pour un calcul basé sur le nombre exact de jours")
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     marche = models.ForeignKey(
@@ -217,6 +248,29 @@ class Decompte(models.Model):
         null=True,
         blank=True
     )
+   
+    def prix_total_1(self):
+        if self.qte1 and self.prix_unitaire1:
+            return self.qte1 * self.prix_unitaire1
+        return 0
+    def prix_total_2(self):
+        if self.qte2 and self.prix_unitaire2:
+            return self.qte2 * self.prix_unitaire2
+        return 0
+    def prix_total_3(self):
+        if self.qte3 and self.prix_unitaire3:
+            return self.qte3 * self.prix_unitaire3
+        return 0
+    
+    
+    class Meta:
+        verbose_name = "Décompte"
+        verbose_name_plural = "Décomptes"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.numero} "
+     
 
 
      # def save(self, *args, **kwargs):
@@ -265,13 +319,24 @@ class Decompte(models.Model):
 
         #super().save(*args, **kwargs)
 
-    class Meta:
-        verbose_name = "Décompte"
-        verbose_name_plural = "Décomptes"
-        ordering = ['-created_at']
+   # class Meta:
+       # verbose_name = "Décompte"
+       # verbose_name_plural = "Décomptes"
+      #  ordering = ['-created_at']
+
+    #def __str__(self):
+        return f"{self.numero} "
+
+
+class Signataire(models.Model):
+    nom = models.CharField(max_length=100, verbose_name="Nom du signataire")
+    fonction = models.CharField(max_length=150, verbose_name="Fonction", blank=True, null=True)
+    email = models.EmailField(blank=True, null=True, verbose_name="Email")
+    telephone = models.CharField(max_length=50, blank=True, null=True, verbose_name="Téléphone")
 
     def __str__(self):
-        return f"{self.numero} "
+        return f"{self.nom} ({self.fonction})" if self.fonction else self.nom
+
 
 class PV(models.Model):
     """Procès-Verbal (Official Report)"""
@@ -291,14 +356,9 @@ class PV(models.Model):
     objet = models.TextField(verbose_name="Objet")
     observations = models.TextField(blank=True, verbose_name="Observations")
     fichier = models.FileField(upload_to='pv/', null=True, blank=True, verbose_name="Fichier joint (PDF)")
-    signataire = models.CharField(max_length=100, null=True, blank=True, verbose_name="Signataire 1")
-    signataire_deux = models.CharField(max_length=100, null=True, blank=True, verbose_name="Signataire 2")
-    signataire_trois = models.CharField(max_length=100, null=True, blank=True, verbose_name="Signataire 3")
     periode_fin = models.DateField(null=True, blank=True, verbose_name="Période fin")
     periode_debut = models.DateField(null=True, blank=True, verbose_name="Période début")
-    fonction_signataire = models.CharField(max_length=100, null=True, blank=True, verbose_name="Fonction du signataire")
-    fonction_signataire_deux = models.CharField(max_length=100, null=True, blank=True, verbose_name="Fonction du signataire")
-    fonction_signataire_trois = models.CharField(max_length=100, null=True, blank=True, verbose_name="Fonction du signataire")
+    signataires = models.ManyToManyField(Signataire, related_name='pvs', verbose_name="Signataires")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     marche = models.ForeignKey(
@@ -384,3 +444,5 @@ class Acompte(models.Model):
 
     def get_absolute_url(self):
         return reverse('acompte_detail', kwargs={'pk': self.pk})
+
+

@@ -3,7 +3,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Submit, Row, Column, Div
 from .models import (
     MaitreOuvrage, Prestataire, Marche, 
-     OrdreService, Decompte, PV, Document,Acompte
+     OrdreService, Decompte, PV, Document,Acompte,Signataire,Ligne
 )
 
 class MaitreOuvrageForm(forms.ModelForm):
@@ -35,7 +35,7 @@ class MaitreOuvrageForm(forms.ModelForm):
 class PrestataireForm(forms.ModelForm):
     class Meta:
         model = Prestataire
-        fields = ['nom', 'adresse', 'telephone', 'email', 'specialite', 'numero_registre']
+        fields = ['representant','nom', 'adresse', 'telephone', 'email', 'specialite', 'numero_registre','cnss','patente','compte','capital']
         widgets = {
             'adresse': forms.Textarea(attrs={'rows': 3}),
         }
@@ -45,7 +45,8 @@ class PrestataireForm(forms.ModelForm):
         self.helper = FormHelper()
         self.helper.layout = Layout(
             Row(
-                Column('nom', css_class='form-group col-md-8 mb-0'),
+                Column('nom', css_class='form-group col-md-4 mb-0'),
+                Column('representant', css_class='form-group col-md-4 mb-0'),
                 Column('specialite', css_class='form-group col-md-4 mb-0'),
                 css_class='form-row'
             ),
@@ -54,27 +55,86 @@ class PrestataireForm(forms.ModelForm):
                 Column('telephone', css_class='form-group col-md-4 mb-0'),
                 Column('email', css_class='form-group col-md-4 mb-0'),
                 Column('numero_registre', css_class='form-group col-md-4 mb-0'),
+                Column('cnss', css_class='form-group col-md-4 mb-0'),
+                Column('patente', css_class='form-group col-md-4 mb-0'),
+                Column('compte', css_class='form-group col-md-4 mb-0'),
+                Column('capital', css_class='form-group col-md-4 mb-0'),
                 css_class='form-row'
             ),
             Submit('submit', 'Enregistrer', css_class='btn btn-primary')
+        )
+
+
+
+from django import forms
+from .models import Ligne
+
+class LigneForm(forms.ModelForm):
+    class Meta:
+        model = Ligne
+        fields = [
+            'numero_prix', 'designation', 'unite_mesure','quantite','prix_unitaire',
+            'marche'
+            
+        ]
+        widgets = {
+            
+        }
+
+    def __init__(self, *args, **kwargs):   
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        
+        self.fields['marche'].queryset = Marche.objects.all().order_by('numero')
+        self.fields['marche'].empty_label = "Sélectionnez un marché"
+        self.fields['marche'].label = "Marché associé"
+
+        self.helper.layout = Layout(
+            Row(
+                Column('numero_prix', css_class='form-group col-md-6 mb-0'),
+                Column('designation', css_class='form-group col-md-6 mb-0'),
+                css_class='form-row'
+            ),
+            
+           
+            
+            Row(
+                Column('unite_mesure', css_class='form-group col-md-4 mb-0'),
+                Column('quantite', css_class='form-group col-md-4 mb-0'),
+                
+                
+                css_class='form-row'
+            ),
+
+             Row(
+                Column('prix_unitaire', css_class='form-group col-md-4 mb-0'),
+                Column('marche', css_class='form-group col-md-4 mb-0'),
+                
+                
+                css_class='form-row'
+            ),
+         
+            Submit('submit', 'Enregistrer', css_class='btn btn-primary')  
         )
 
 class MarcheForm(forms.ModelForm):
     class Meta:
         model = Marche
         fields = ['numero', 'objet', 'type', 'montant','montant_annual','quantite','prix_unitaire', 'date_signature', 
-                 'date_debut', 'date_fin', 'statut', 'maitre_ouvrage', 'prestataire','marque', 'periodicite','description']
-        exclude = ['rest_a_payer']
+                 'date_debut', 'date_fin', 'statut', 'maitre_ouvrage', 'prestataire','marque', 'periodicite','description','rest_a_payer']
+        #exclude = ['rest_a_payer']
         widgets = {
             'objet': forms.Textarea(attrs={'rows': 3}),
-            'date_signature': forms.DateInput(attrs={'type': 'date'}),
-            'date_debut': forms.DateInput(attrs={'type': 'date'}),
-            'date_fin': forms.DateInput(attrs={'type': 'date'}),
+            'date_signature': forms.DateInput(attrs={'type': 'date'},format='%Y-%m-%d'),
+            'date_debut': forms.DateInput(attrs={'type': 'date'},format='%Y-%m-%d'),
+            'date_fin': forms.DateInput(attrs={'type': 'date'},format='%Y-%m-%d'),
             'description' : forms.Textarea(attrs={'rows':3}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if not self.instance.pk:
+            self.fields['rest_a_payer'].widget = forms.HiddenInput()
         self.helper = FormHelper()
         self.helper.layout = Layout(
             Row(
@@ -86,13 +146,14 @@ class MarcheForm(forms.ModelForm):
             Row(
                 Column('montant', css_class='form-group col-md-6 mb-0'),
                 Column('montant_annual', css_class='form-group col-md-6 mb-0'),
-                Column('statut', css_class='form-group col-md-6 mb-0'),
+                
                 css_class='form-row'
             ),
             Row(
-                Column('maitre_ouvrage', css_class='form-group col-md-6 mb-0'),
-                Column('prestataire', css_class='form-group col-md-6 mb-0'),
-                Column('quantite', css_class='form-group col-md-6 mb-0'),
+                Column('statut', css_class='form-group col-md-4 mb-0'),
+                Column('maitre_ouvrage', css_class='form-group col-md-4 mb-0'),
+                Column('prestataire', css_class='form-group col-md-4 mb-0'),
+                #Column('quantite', css_class='form-group col-md-6 mb-0'),
                 css_class='form-row'
             ),
             Row(
@@ -102,9 +163,11 @@ class MarcheForm(forms.ModelForm):
                 css_class='form-row'
             ),
             Row(
-                Column('prix_unitaire', css_class='form-group col-md-4 mb-0'),
-                Column('marque', css_class='form-group col-md-4 mb-0'),
-                Column('periodicite', css_class='form-group col-md-4 mb-0'),
+                
+                #Column('marque', css_class='form-group col-md-4 mb-0'),
+                
+                Column('periodicite', css_class='form-group col-md-6 mb-0'),
+                Column('rest_a_payer', css_class='form-group col-md-6 mb-0'),
                 css_class='form-row'
             ),
             'description',
@@ -118,8 +181,8 @@ class OrdreServiceForm(forms.ModelForm):
         fields = ['numero', 'objet','type', 'date_emission', 'date_execution', 'statut','signataire', 'marche','observations','fichier']
         widgets = {
             'objet': forms.Textarea(attrs={'rows': 3}),
-            'date_emission': forms.DateInput(attrs={'type': 'date'}),
-            'date_execution': forms.DateInput(attrs={'type': 'date'}),
+            'date_emission': forms.DateInput(attrs={'type': 'date'},format='%Y-%m-%d'),
+            'date_execution': forms.DateInput(attrs={'type': 'date'},format='%Y-%m-%d'),
         }
 
     def __init__(self, *args, **kwargs):
@@ -167,15 +230,16 @@ class OrdreServiceForm(forms.ModelForm):
 class DecompteForm(forms.ModelForm):
     class Meta:
         model = Decompte
+        exclude = ['created_at','updated_at']
         fields = [
             'numero', 'periode_debut', 'periode_fin', 'periodicite',
-            'marche', 'acompte', 'type', 'tva', 'unite_de_mesure',
+            'marche', 'acompte', 'type', 'tva', 'montant_ttc',
             'quantite', 'statut', 'fichier'
         ]
 
         widgets = {
-            'periode_debut': forms.DateInput(attrs={'type': 'date'}),
-            'periode_fin': forms.DateInput(attrs={'type': 'date'}),
+            'periode_debut': forms.DateInput(attrs={'type': 'date'},format='%Y-%m-%d'),
+            'periode_fin': forms.DateInput(attrs={'type': 'date'},format='%Y-%m-%d'),
             'marche': forms.Select(attrs={'class': 'form-control'}),
             'acompte': forms.Select(attrs={'class': 'form-control'}),
         }
@@ -207,40 +271,46 @@ class DecompteForm(forms.ModelForm):
                 Column('periodicite', css_class='form-group col-md-4 mb-0'),
             ),
             Row(
-                Column('marche', css_class='form-group col-md-6 mb-0'),
-                Column('acompte', css_class='form-group col-md-6 mb-0'),
-            ),
-            Row(
+                Column('marche', css_class='form-group col-md-4 mb-0'),
+                Column('acompte', css_class='form-group col-md-4 mb-0'),
                 Column('tva', css_class='form-group col-md-4 mb-0'),
-                Column('unite_de_mesure', css_class='form-group col-md-4 mb-0'),
-                Column('quantite', css_class='form-group col-md-4 mb-0'),
+            ),
+            
+              Row(
+                Column('montant_ttc', css_class='form-group col-md-12 mb-0'),
             ),
             Row(
                 Column('fichier', css_class='form-group col-md-12 mb-0'),
             ),
+
             Submit('submit', 'Enregistrer', css_class='btn btn-primary')
         )
         
+
+
+
+
 class PVForm(forms.ModelForm):
     class Meta:
         model = PV
         fields = [
             'numero', 'type', 'date_pv','periode_debut','periode_fin', 'objet', 'observations',
-            'marche', 'signataire', 'signataire_deux','fonction_signataire','fonction_signataire_deux','fonction_signataire_trois',
-            'signataire_trois', 'fichier',
+            'marche', 'signataires',
+             'fichier',
         ]
         widgets = {
-            'date_pv': forms.DateInput(attrs={'type': 'date'}),
-            'periode_debut': forms.DateInput(attrs={'type': 'date'}),
-            'periode_fin': forms.DateInput(attrs={'type': 'date'}),
+            'date_pv': forms.DateInput(attrs={'type': 'date'},format='%Y-%m-%d'),
+            'periode_debut': forms.DateInput(attrs={'type': 'date'},format='%Y-%m-%d'),
+            'periode_fin': forms.DateInput(attrs={'type': 'date'},format='%Y-%m-%d'),
             'objet': forms.Textarea(attrs={'rows': 3}),
+            'signataires': forms.SelectMultiple(attrs={'class': 'form-control'}),
             'observations': forms.Textarea(attrs={'rows': 4}),
         }
 
     def __init__(self, *args, **kwargs):   
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
-
+        self.fields['signataires'].queryset = Signataire.objects.all().order_by('nom')
         self.fields['marche'].queryset = Marche.objects.all().order_by('numero')
         self.fields['marche'].empty_label = "Sélectionnez un marché"
         self.fields['marche'].label = "Marché associé"
@@ -253,18 +323,7 @@ class PVForm(forms.ModelForm):
             ),
             
             'objet',
-             Row(
-                Column('signataire', css_class='form-group col-md-4 mb-0'),
-                Column('signataire_deux', css_class='form-group col-md-4 mb-0'),
-                Column('signataire_trois', css_class='form-group col-md-4 mb-0'),
-                css_class='form-row'
-            ),
-             Row(
-                Column('fonction_signataire', css_class='form-group col-md-4 mb-0'),
-                Column('fonction_signataire_deux', css_class='form-group col-md-4 mb-0'),
-                Column('fonction_signataire_trois', css_class='form-group col-md-4 mb-0'),
-                css_class='form-row'
-            ),
+            
             Row(
                 Column('date_pv', css_class='form-group col-md-4 mb-0'),
                 Column('periode_debut', css_class='form-group col-md-4 mb-0'),
@@ -272,7 +331,10 @@ class PVForm(forms.ModelForm):
                 
                 css_class='form-row'
             ),
-            Column('marche', css_class='form-group col-md-6 mb-0'),
+            Row(Column('marche', css_class='form-group col-md-6 mb-0'),
+            Column('signataires', css_class='form-group col-md-6 mb-0'),
+            css_class='form-row'),
+            
             'observations',
             Row(
                 Column('fichier', css_class='form-group col-md-6 mb-0'),
@@ -330,7 +392,7 @@ class DocumentForm(forms.ModelForm):
 from django import forms
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Row, Column, Submit
-from .models import Acompte, Marche
+from .models import Acompte, Marche,Signataire
 
 class AcompteForm(forms.ModelForm):
     class Meta:
@@ -386,5 +448,44 @@ class AcompteForm(forms.ModelForm):
                 css_class='form-row'
             ),
             Row('observation', css_class='form-group col-md-12 mb-0'),
+            Submit('submit', 'Enregistrer', css_class='btn btn-primary mt-3')
+        )
+
+
+
+
+class SignataireForm(forms.ModelForm):
+    class Meta:
+        model = Signataire
+        fields = [
+            'nom',
+            'fonction',
+            'email',
+            'telephone', 
+        ]
+
+        widgets = {
+            
+            'marche': forms.Select(attrs={'class': 'form-control'}),
+        
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        
+
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            
+            Row(
+                Column('nom', css_class='form-group col-md-6 mb-0'),
+                Column('fonction', css_class='form-group col-md-6 mb-0'),
+                Column('email', css_class='form-group col-md-6 mb-0'),
+                Column('telephone', css_class='form-group col-md-6 mb-0'),
+                css_class='form-row'
+            ),
+            
+            
             Submit('submit', 'Enregistrer', css_class='btn btn-primary mt-3')
         )

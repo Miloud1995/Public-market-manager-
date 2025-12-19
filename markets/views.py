@@ -37,12 +37,12 @@ from decimal import Decimal  # adapte selon ton projet
 
 from .models import (
     MaitreOuvrage, Prestataire, Marche, 
-     OrdreService, Decompte, PV, Document,Acompte
+     OrdreService, Decompte, PV, Document,Acompte,Signataire
 )
 from .forms import (
     MaitreOuvrageForm, PrestataireForm, MarcheForm,  
     OrdreServiceForm, DecompteForm, 
-    PVForm, DocumentForm, AcompteForm
+    PVForm, DocumentForm, AcompteForm,SignataireForm
 )
 
 @login_required
@@ -400,9 +400,6 @@ from .models import Decompte
 from .forms import DecompteForm
 
 
-
-@login_required
-@login_required
 def decompte_create(request):
     def calculer_jours_reels_annee(date_debut, date_fin):
         """
@@ -579,196 +576,200 @@ def decompte_create(request):
         'title': 'Créer Décompte',
         'is_update': False
     })
+
+
 @login_required
+def decompte_create(request):
+    form = DecompteForm()
+
+    if request.method == 'POST':
+        form = DecompteForm(request.POST)
+        
+        if form.is_valid():
+            try:
+                decompte = form.save(commit=False)
+               
+                
+                
+                if decompte.marche and decompte.periode_debut and decompte.periode_fin:
+                    if decompte.periode_debut > decompte.periode_fin:
+                        form.add_error('periode_fin','La date de fin  doit etre postérieure a la date de début')
+                        return render (request, 'markets/decompte_form.html',{'form':form,'title': 'Nouveau Décompte'})
+                    if not decompte.marche.date_debut:
+                        form.add_error(None,"Le marché associé doit avoir unre date de debut definie")
+                        return render (request, 'markets/decompte_form.html',{'form': form,'title':"Nouveau Décompte"})
+                    
+
+                    montant_annuel = decompte.marche.montant_annual or Decimal(0)
+                    periodicite = decompte.marche.periodicite
+
+                    
+
+                    if periodicite == "prorata":
+                        jours_periode = (decompte.periode_fin - decompte.periode_debut).days + 1
+                        anne = decompte.periode_debut.year
+                        jours_annee = 366 if (anne % 4 == 0  and anne % 100 !=0) or (anne % 400==0) else 365
+                        montant_calculer = (montant_annuel * Decimal(jours_periode)/Decimal(jours_annee))
+                        decompte.montant_ht = montant_calculer.quantize(Decimal('0.01'))
+                        print(f"DEBUG - CALCUL Prorata : {jours_periode} jours / {jours_annee} jours = {decompte.montant_ht}")
+                    else :
+                       periodes_par_an = {
+                          'mensuelle' :12,
+                          'trimestrielle' :4,
+                          'semestrielle' :2
+                       }.get(periodicite,1) 
+
+                       decompte.montant_ht = (montant_annuel/Decimal(periodes_par_an)).quantize(Decimal('0.01'))
+                       
+
+                       periode_actuelle = decompte.marche.date_debut
+                       trouve = False  
+
+                       while periode_actuelle < decompte.periode_fin:
+                           periode_suivante = periode_actuelle + relativedelta(months=12//periodes_par_an)
+
+                           if(decompte.periode_debut >= periode_actuelle and decompte.periode_fin <= periode_suivante):
+                            trouve = True 
+                            break
+                           periode_actuelle = periode_suivante
+                        
+                       if not trouve:
+                          
+                          form.add_error(None,f"La période ne correspond a aucune periode {periodicite} du marché")
+ 
+                          return render(request, 'markets/decompte_form.html,',{'form' : form, 'title' : 'Nouveau Décompte'})
+                
+                else:
+                    if not decompte.montant_ht:
+                      decompte.montant_ht = Decimal("0.00")
+
+                    
+                if decompte.montant_ht is not None :
+                    decompte.montant_ttc = decompte.montant_ht
+
+
+                if decompte.statut == 'paye':
+                     if not decompte.marche :
+                            form.add_error('statut',"Imposible de marquer comme payé sans marché associé ")
+
+                            return render(request, 'markets/decompte_form.html,',{'form': form, 'title':'Nouveau Decompte'})
+                        
+                     marche = decompte.marche
+                     if marche.rest_a_payer < decompte.montant_ttc:
+                        form.add_error('montant_ttc', " Le montant dépasse le reste a payer")
+                        return render (request, 'markets/decompte_form.html', {'form' : form, 'title': "Nouveau Décompte" })
+                     
+
+                     marche.rest_a_payer -= decompte.montant_ttc
+                     marche.save()
+                decompte.save() 
+                messages.success(request, ' Décompte créé avec succés.')
+                return redirect ('decompte_list')
+
+
+                                       
+
+            except Exception as e:
+                messages.error(request, f"Une erreur est survenue : {str(e)}")
+                return render(request, 'markets/decompte_form.html',{'form': form,'title':"Nouveau Décompte"})
+            
+        else : 
+            return render(request,'markets/decompte_form.html',{'form': form,'title':"Nouveau Décompte"})
+    else:
+        form = DecompteForm()
+       
+    return render(request,'markets/decompte_form.html',{'form': form,'title':"Nouveau Décompte"})
+        
+
+
+
 @login_required
 def decompte_update(request, pk):
     decompte = get_object_or_404(Decompte, pk=pk)
     ancien_montant_ttc = decompte.montant_ttc  # Sauvegarder l'ancien montant pour ajuster le reste à payer
-    
+
     def calculer_jours_reels_annee(date_debut, date_fin):
-        """
-        Calcule le nombre de jours réels dans l'année en cours de la période.
-        Prend en compte les années bissextiles.
-        """
         annee = date_debut.year
-        if date_debut.year != date_fin.year:
-            # Si la période s'étend sur plusieurs années, prendre l'année de début
-            annee = date_debut.year
-        
-        # Vérifier si c'est une année bissextile
         if (annee % 4 == 0 and annee % 100 != 0) or (annee % 400 == 0):
             return 366
         else:
             return 365
-    
+
     def calculer_jours_par_mois_dans_periode(date_debut, date_fin):
-        """
-        Calcule le nombre de jours réels pour chaque mois dans la période donnée.
-        Retourne le nombre total de jours et un dictionnaire détaillé.
-        """
         total_jours = 0
         detail_mois = {}
-        
         current_date = date_debut
-        
+
         while current_date <= date_fin:
             annee = current_date.year
             mois = current_date.month
-            
-            # Début du mois courant
             debut_mois = current_date.replace(day=1)
-            
-            # Fin du mois courant
-            if mois == 12:
-                fin_mois = debut_mois.replace(year=annee + 1, month=1, day=1) - relativedelta(days=1)
-            else:
-                fin_mois = debut_mois.replace(month=mois + 1, day=1) - relativedelta(days=1)
-            
-            # Calculer les jours dans ce mois pour notre période
+            fin_mois = (debut_mois.replace(month=mois + 1, day=1) - relativedelta(days=1)) if mois < 12 else (debut_mois.replace(year=annee + 1, month=1, day=1) - relativedelta(days=1))
             debut_periode_mois = max(current_date, debut_mois)
             fin_periode_mois = min(date_fin, fin_mois)
-            
             jours_dans_mois = (fin_periode_mois - debut_periode_mois).days + 1
-            
             cle_mois = f"{annee}-{mois:02d}"
             detail_mois[cle_mois] = jours_dans_mois
             total_jours += jours_dans_mois
-            
-            # Passer au mois suivant
-            if mois == 12:
-                current_date = current_date.replace(year=annee + 1, month=1, day=1)
-            else:
-                current_date = current_date.replace(month=mois + 1, day=1)
-        
+            current_date = (current_date.replace(month=mois + 1, day=1)) if mois < 12 else (current_date.replace(year=annee + 1, month=1, day=1))
+
         return total_jours, detail_mois
-    
+
     if request.method == 'POST':
         form = DecompteForm(request.POST, request.FILES, instance=decompte)
         if form.is_valid():
-            try:
-                decompte = form.save(commit=False)
-                if decompte.marche and decompte.periode_debut and decompte.periode_fin:
-                    # Validation des dates
-                    if decompte.periode_debut > decompte.periode_fin:
-                        form.add_error('periode_fin', "La date de fin doit être postérieure à la date de début")
-                        return render(request, 'markets/decompte_form.html', {'form': form, 'title': 'Modifier Décompte'})
-                    
-                    if not decompte.marche.date_debut:
-                        form.add_error(None, "Le marché associé doit avoir une date de début définie")
-                        return render(request, 'markets/decompte_form.html', {'form': form, 'title': 'Modifier Décompte'})
-                    
-                    # Montant annuel et application de la TVA
-                    montant_annual_ht = decompte.marche.montant_annual or Decimal(0)
-                    montant_annual_ttc = (montant_annual_ht * (Decimal('1') + decompte.tva / Decimal('100'))).quantize(Decimal('0.01'))
-                    
-                    periodicite = decompte.periodicite.lower() if decompte.periodicite else None
-                    
-                    # Calcul du montant du décompte basé sur la période réelle
-                    duree_decompte_jours = (decompte.periode_fin - decompte.periode_debut).days + 1
-                    
-                    if periodicite and periodicite == 'prorata':
-                        # MODE PRORATA : Calcul basé sur le nombre de jours réels avec prise en compte des mois
-                        if decompte.marche.date_fin:
-                            # Prorata sur la durée totale du marché
-                            duree_totale_marche = (decompte.marche.date_fin - decompte.marche.date_debut).days + 1
-                            if duree_totale_marche > 0:
-                                # Calculer les jours réels dans la période du décompte
-                                jours_reels_decompte, detail_mois_decompte = calculer_jours_par_mois_dans_periode(
-                                    decompte.periode_debut, decompte.periode_fin
-                                )
-                                
-                                decompte.montant_ttc = (montant_annual_ttc * Decimal(jours_reels_decompte) / Decimal(duree_totale_marche)).quantize(Decimal('0.01'))
-                            else:
-                                decompte.montant_ttc = Decimal('0')
-                        else:
-                            # Prorata sur une année avec calcul précis des jours
-                            jours_reels_decompte, detail_mois_decompte = calculer_jours_par_mois_dans_periode(
-                                decompte.periode_debut, decompte.periode_fin
-                            )
-                            
-                            # Calculer le nombre de jours réels dans l'année de référence
-                            jours_reels_annee = calculer_jours_reels_annee(decompte.periode_debut, decompte.periode_fin)
-                            
-                            decompte.montant_ttc = (montant_annual_ttc * Decimal(jours_reels_decompte) / Decimal(jours_reels_annee)).quantize(Decimal('0.01'))
-                    
-                    elif periodicite:
-                        # MODE PÉRIODICITÉ FIXE : Montant fixe selon la périodicité choisie
-                        if periodicite == 'trimestrielle':
-                            # Montant pour 1 trimestre complet
-                            decompte.montant_ttc = (montant_annual_ttc / Decimal('4')).quantize(Decimal('0.01'))
-                        elif periodicite == 'semestrielle':
-                            # Montant pour 1 semestre complet
-                            decompte.montant_ttc = (montant_annual_ttc / Decimal('2')).quantize(Decimal('0.01'))
-                        elif periodicite == 'mensuelle':
-                            # Montant pour 1 mois complet
-                            decompte.montant_ttc = (montant_annual_ttc / Decimal('12')).quantize(Decimal('0.01'))
-                        elif periodicite == 'annuelle':
-                            # Montant annuel complet
-                            decompte.montant_ttc = montant_annual_ttc
-                        else:
-                            # Périodicité non reconnue, utiliser le prorata précis par défaut
-                            jours_reels_decompte, detail_mois_decompte = calculer_jours_par_mois_dans_periode(
-                                decompte.periode_debut, decompte.periode_fin
-                            )
-                            jours_reels_annee = calculer_jours_reels_annee(decompte.periode_debut, decompte.periode_fin)
-                            decompte.montant_ttc = (montant_annual_ttc * Decimal(jours_reels_decompte) / Decimal(jours_reels_annee)).quantize(Decimal('0.01'))
-                    
-                    else:
-                        # Aucune périodicité définie, utiliser le prorata précis par défaut
-                        if decompte.marche.date_fin:
-                            duree_totale_marche = (decompte.marche.date_fin - decompte.marche.date_debut).days + 1
-                            if duree_totale_marche > 0:
-                                jours_reels_decompte, detail_mois_decompte = calculer_jours_par_mois_dans_periode(
-                                    decompte.periode_debut, decompte.periode_fin
-                                )
-                                decompte.montant_ttc = (montant_annual_ttc * Decimal(jours_reels_decompte) / Decimal(duree_totale_marche)).quantize(Decimal('0.01'))
-                            else:
-                                decompte.montant_ttc = Decimal('0')
-                        else:
-                            jours_reels_decompte, detail_mois_decompte = calculer_jours_par_mois_dans_periode(
-                                decompte.periode_debut, decompte.periode_fin
-                            )
-                            jours_reels_annee = calculer_jours_reels_annee(decompte.periode_debut, decompte.periode_fin)
-                            decompte.montant_ttc = (montant_annual_ttc * Decimal(jours_reels_decompte) / Decimal(jours_reels_annee)).quantize(Decimal('0.01'))
-                    
-                    # Calcul du montant HT à partir du TTC
-                    decompte.montant_ht = (decompte.montant_ttc / (Decimal('1') + decompte.tva / Decimal('100'))).quantize(Decimal('0.01'))
-                    
-                    # Mise à jour du reste à payer du marché
-                    marche = decompte.marche
-                    
-                    # Calculer la différence entre nouveau et ancien montant
-                    difference_montant = decompte.montant_ttc - ancien_montant_ttc
-                    
-                    # Vérifier si le nouveau montant ne dépasse pas le reste à payer disponible
-                    reste_disponible = marche.rest_a_payer + ancien_montant_ttc  # Reste + ancien montant = disponible total
-                    if decompte.montant_ttc > reste_disponible:
-                        form.add_error(None, f"Le nouveau montant ({decompte.montant_ttc} DH) dépasse le reste disponible ({reste_disponible} DH)")
-                        return render(request, 'markets/decompte_form.html', {'form': form, 'title': 'Modifier Décompte'})
-                    
-                    # Ajuster le reste à payer avec la différence
-                    marche.rest_a_payer -= difference_montant
-                    marche.save()
-                    
-                    decompte.save()
-                    
-                    if difference_montant > 0:
-                        messages.success(request, f'Décompte modifié avec succès. Montant augmenté de {difference_montant} DH. Nouveau montant: {decompte.montant_ttc} DH TTC')
-                    elif difference_montant < 0:
-                        messages.success(request, f'Décompte modifié avec succès. Montant diminué de {abs(difference_montant)} DH. Nouveau montant: {decompte.montant_ttc} DH TTC')
-                    else:
-                        messages.success(request, f'Décompte modifié avec succès. Montant inchangé: {decompte.montant_ttc} DH TTC')
-                    
-                    return redirect('decompte_list')
-                    
-            except Exception as e:
-                messages.error(request, f"Une erreur est survenue : {str(e)}")
+            decompte = form.save(commit=False)
+            marche = decompte.marche
+
+            # Validation des dates
+            if decompte.periode_debut and decompte.periode_fin and decompte.periode_debut > decompte.periode_fin:
+                form.add_error('periode_fin', "La date de fin doit être postérieure à la date de début")
                 return render(request, 'markets/decompte_form.html', {'form': form, 'title': 'Modifier Décompte'})
+
+            # --- GESTION DU MONTANT TTC EDITABLE ---
+            if 'montant_ttc' in form.cleaned_data and form.cleaned_data['montant_ttc'] is not None:
+                # L'utilisateur a saisi un montant manuellement
+                decompte.montant_ttc = form.cleaned_data['montant_ttc']
+            else:
+                # Calcul automatique selon prorata / périodicité
+                montant_annual_ht = marche.montant_annual or Decimal(0)
+                montant_annual_ttc = (montant_annual_ht * (Decimal('1') + decompte.tva / Decimal('100'))).quantize(Decimal('0.01'))
+
+                # Ici tu peux conserver ton ancien calcul prorata / périodicité
+                # Exemple pour prorata précis :
+                if decompte.periode_debut and decompte.periode_fin:
+                    jours_reels_decompte, _ = calculer_jours_par_mois_dans_periode(decompte.periode_debut, decompte.periode_fin)
+                    jours_reels_annee = calculer_jours_reels_annee(decompte.periode_debut, decompte.periode_fin)
+                    decompte.montant_ttc = (montant_annual_ttc * Decimal(jours_reels_decompte) / Decimal(jours_reels_annee)).quantize(Decimal('0.01'))
+
+            # Calcul du montant HT
+            decompte.montant_ht = (decompte.montant_ttc / (Decimal('1') + decompte.tva / Decimal('100'))).quantize(Decimal('0.01'))
+
+            # Ajustement du reste à payer du marché
+            difference_montant = decompte.montant_ttc - ancien_montant_ttc
+            reste_disponible = marche.rest_a_payer + ancien_montant_ttc
+            if decompte.montant_ttc > reste_disponible:
+                form.add_error(None, f"Le nouveau montant ({decompte.montant_ttc} DH) dépasse le reste disponible ({reste_disponible} DH)")
+                return render(request, 'markets/decompte_form.html', {'form': form, 'title': 'Modifier Décompte'})
+
+            marche.rest_a_payer -= difference_montant
+            marche.save()
+            decompte.save()
+
+            # Messages utilisateurs
+            if difference_montant > 0:
+                messages.success(request, f'Décompte modifié avec succès. Montant augmenté de {difference_montant} DH.')
+            elif difference_montant < 0:
+                messages.success(request, f'Décompte modifié avec succès. Montant diminué de {abs(difference_montant)} DH.')
+            else:
+                messages.success(request, f'Décompte modifié avec succès. Montant inchangé.')
+
+            return redirect('decompte_list')
     else:
         form = DecompteForm(instance=decompte)
-    
+
     return render(request, 'markets/decompte_form.html', {
-        'form': form, 
+        'form': form,
         'title': 'Modifier Décompte',
         'decompte': decompte,
         'is_update': True
@@ -791,6 +792,28 @@ def decompte_list(request):
         'statut_choices': Decompte.STATUT_CHOICES,
     })
 
+@login_required
+def decompte_delete(request, pk):
+    decompte = get_object_or_404(Decompte,pk=pk)
+    if request.method == 'POST':
+        try:
+            marche = decompte.marche
+            montant_ttc = decompte.montant_ttc
+            statut = decompte.statut
+
+            decompte.delete()
+
+            if statut == 'paye' and marche:
+                marche.rest_a_payer+=montant_ttc
+                marche.save()
+                messages.success(request,f'Décompte supprimé avec succes et {montant_ttc} DH réinté grés au reste a payer')
+            else:
+                messages.success(request,'Décompte supprimé avecsuccés,')
+            return redirect('decompte_list')
+        except Exception as e :
+            messages.error(request,f'Error lors de la suppression  :{str(e)}')
+            return redirect('decompte_list')
+    return render(request,'markets/confirm_delete.html',{'objet': decompte , 'type' :'Décompte'})
 
 
 
@@ -800,135 +823,240 @@ from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
 from openpyxl.utils import get_column_letter
+from decimal import Decimal,InvalidOperation
+from openpyxl import Workbook
+from openpyxl.styles import Font,Alignment,Border,Side,PatternFill
+from openpyxl.utils import get_column_letter
 
 
 from .models import Decompte  # adapte selon ton projet
 
 @login_required
+def generate_decompte_pdf(request,pk):
+    import io
+from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, Border, Side
+from .models import Decompte
+
+
+import openpyxl
+from openpyxl.styles import Alignment, Border, Side, Font
+from openpyxl.drawing.image import Image
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from .models import Decompte, Ligne
+from openpyxl.drawing.image import Image as XLImage
+
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.units import cm
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+from reportlab.lib.enums import TA_CENTER
+from decimal import Decimal
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from .models import Decompte, Ligne
+from io import BytesIO
+from num2words import num2words
+from decimal import Decimal, ROUND_DOWN
+@login_required
 def generate_decompte_pdf(request, pk):
     decompte = get_object_or_404(Decompte, pk=pk)
+    marche = decompte.marche
+    lignes = Ligne.objects.filter(marche=marche)
 
-    # Créer le fichier Excel
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Décompte Provisoire"
+    # Create the response
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="decompte_{decompte.id}.pdf"'
 
-    # Styles
-    bold = Font(bold=True)
-    center = Alignment(horizontal="center", vertical="center", wrap_text=True)
-    thin_border = Border(
-        left=Side(style="thin"),
-        right=Side(style="thin"),
-        top=Side(style="thin"),
-        bottom=Side(style="thin")
+    # PDF setup
+    doc = SimpleDocTemplate(response, pagesize=A4, rightMargin=2*cm, leftMargin=2*cm, topMargin=1.5*cm, bottomMargin=1.5*cm)
+    elements = []
+    styles = getSampleStyleSheet()
+
+   
+
+# === LOGOS ===
+   
+    try:
+     logo2 = Image("static/img/LOGO.jpg", width=13*cm, height=3*cm)
+    except:
+     logo2 = Spacer(3*cm, 3*cm)
+
+    
+    header_logos = Table(
+    [[logo2]],
+    colWidths=[4*cm, 5*cm, 4*cm]  # CENTER logo gets more space
     )
 
-    # === Titre ===
-    ws.merge_cells("A1:F1")
-    ws["A1"] = f"DÉCOMPTE {decompte.type} N°{decompte.numero}"
-    ws["A1"].font = Font(bold=True, size=14)
-    ws["A1"].alignment = center
+    header_logos.setStyle(TableStyle([
+    ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+    ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+  ]))
 
-    ws.merge_cells("A2:F2")
-    ws["A2"] = f"Prestations réalisées Du {decompte.periode_debut} au {decompte.periode_fin}"
-    ws["A2"].font = bold
-    ws["A2"].alignment = center
+    elements.append(header_logos)
+    elements.append(Spacer(1, 10))
+        
+    # Custom styles
+    style_center = ParagraphStyle(
+        'Center',
+        parent=styles['Normal'],
+        alignment=TA_CENTER,
+        fontSize=10,
+        spaceAfter=6
+    )
+    
+    style_bold = ParagraphStyle(
+        'Bold',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=10
+    )
 
-    # === En-têtes du tableau ===
-    headers = ["N° des prix", "Désignation", "Unité de mesure", "Qté",'Statut',
-                "Prix Total hors TVA"]
-    ws.append(headers)
+    # === Header ===
+    
+    #elements.append(Paragraph(header_text, style_center))
+    elements.append(Spacer(1, 12))
 
-    for col in range(1, len(headers) + 1):
-        cell = ws.cell(row=3, column=col)
-        cell.font = bold
-        cell.alignment = center
-        cell.border = thin_border
+    # === Market Title ===
+    market_title = f"<b>Marché Reconductible N°{marche.numero}  relatif à  : {marche.objet}</b>"
+    elements.append(Paragraph(market_title, style_center))
+    elements.append(Spacer(1, 12))
 
-    # === Ligne prestation ===
-    prix_total = decompte.montant_ht  # supposons que tu stockes le HT
-    ws.append([1,
-               decompte.numero,   # si tu as un champ "designation"
-               decompte.unite_de_mesure,         # champ unité
-               decompte.quantite,      # champ quantité
-               decompte.statut, # champ prix unitaire
-               prix_total])
+    # === Company Information ===
+    company_data = [
+        ["Société :", f"{marche.prestataire.nom}"],
+        ["R.C :", f"{marche.prestataire.numero_registre}"],
+        ["CNSS :",f"{marche.prestataire.cnss}"], 
+        ["C.B :", f"{marche.prestataire.compte}"],
+        ["", ""],
+        ["Montant de l'acompte", f"{decompte.montant_ttc:,.2f}"]
+    ]
+    
+    company_table = Table(company_data, colWidths=[4*cm, 11*cm])
+    company_table.setStyle(TableStyle([
+        ('FONTNAME', (0,0), (-1,-1), 'Helvetica'),
+        ('FONTSIZE', (0,0), (-1,-1), 9),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+    ]))
+    elements.append(company_table)
+    elements.append(Spacer(1, 12))
 
-    for col in range(1, 7):
-        cell = ws.cell(row=4, column=col)
-        cell.border = thin_border
-        cell.alignment = center
+    # === Decompte Title ===
+    decompte_title = f"<b>Décompte {decompte.type} N°{decompte.numero}<br/>Prestations réalisées du {decompte.periode_debut} au {decompte.periode_fin}</b>"
+    elements.append(Paragraph(decompte_title, style_center))
+    elements.append(Spacer(1, 12))
 
-    # === Totaux ===
-    montant_tva = decompte.montant_ttc - decompte.montant_ht
+    # === Main Table ===
+    table_data = [["N° des prix", "Désignation", "Unité de mesure", "Qte", "Prix unitaire", "Prix Total"]]
 
-    ws.merge_cells("A6:E6")
-    ws["A6"] = "Total Annuel Hors TVA"
-    ws["A6"].font = bold
-    ws["F6"] = decompte.montant_ht
+    # Fill table with Lignes
+    total_annuel_hors_tva = Decimal(0)
+    for ligne in lignes:
+        prix_total = ligne.quantite * ligne.prix_unitaire
+        total_annuel_hors_tva += prix_total
+        table_data.append([
+            str(ligne.numero_prix),
+            ligne.designation,
+            ligne.unite_mesure,
+            str(ligne.quantite),
+            ligne.prix_unitaire,  # Masked unit price as in the image
+            f"{prix_total:.2f}"
+        ])
 
-    ws.merge_cells("A7:E7")
-    ws["A7"] = f"TVA {decompte.tva}%"
-    ws["A7"].font = bold
-    ws["F7"] = montant_tva
+    # Add totals
+    tva = total_annuel_hors_tva * Decimal("0.2")
+    total_ttc_annuel = total_annuel_hors_tva + tva
 
-    ws.merge_cells("A8:E8")
-    ws["A8"] = f"TOTAL des Prestations réalisées Du {decompte.periode_debut} au {decompte.periode_fin} TTC"
-    ws["A8"].font = bold
-    ws["F8"] = decompte.montant_ttc
+    table_data.append(["", "", "", "", "Total Annuel Hors TVA", f"{total_annuel_hors_tva:.2f}"])
+    table_data.append(["", "", "", "", "TVA 20 %", f"{tva:.2f}"])
+    table_data.append(["", "", "", "", "TOTAL TTC", f"{total_ttc_annuel:.2f}"])
+    table_data.append(["", f"TOTAL des Prestations réalisées du {decompte.periode_debut} au {decompte.periode_fin} TTC", "", "", "", f"{decompte.montant_ttc:.2f}"])
 
-    # === Récapitulatif ===
-    ws.merge_cells("A10:F10")
-    ws["A10"] = "RECAPITULATION GENERALE"
-    ws["A10"].font = bold
-    ws["A10"].alignment = center
- 
-    recap = [
-        ["NATURES DES DEPENSES", "DEPENSES FAITES"],
-        ["Prestations réalisées", decompte.montant_ttc],
-        ["TOTAUX TTC", decompte.montant_ttc],
-        ["A déduire le montant des acomptes délivrés sur l'exercice en cours", ""],
-        ["Montant de l'acompte à délivrer en DH TTC", decompte.montant_ttc],
-        [f"   Dont T.V.A (à {decompte.tva}%)", montant_tva]
+    # Style the main table
+    table = Table(table_data, colWidths=[2*cm, 7*cm, 2.5*cm, 2*cm, 3*cm, 3*cm])
+    table.setStyle(TableStyle([
+        ('GRID', (0,0), (-1,-4), 0.5, colors.black),  # Grid until annual totals
+        ('GRID', (0,-3), (-1,-1), 0.5, colors.black), # Grid for the last row
+        ('SPAN', (1,-1), (4,-1)),  # Span the description cell for the final total
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTNAME', (0,-1), (-1,-1), 'Helvetica-Bold'),
+        ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+        ('ALIGN', (0,0), (-1,0), 'CENTER'),
+        ('ALIGN', (3,0), (-1,-1), 'RIGHT'),  # Right align quantities and prices
+        ('ALIGN', (0,1), (0,-1), 'CENTER'),  # Center align item numbers
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('FONTSIZE', (0,0), (-1,-1), 8),
+    ]))
+    elements.append(table)
+    elements.append(Spacer(1, 20))
+
+    # === Recap Section ===
+    elements.append(Paragraph("<b>RÉCAPITULATION GÉNÉRALE</b>", style_bold))
+    elements.append(Spacer(1, 6))
+
+    recap_data = [
+        ["NATURES DES DÉPENSES", "DÉPENSES FAITES"],
+        ["Prestation réalisées", f"{decompte.montant_ttc:.2f}"],
+        ["TOTAUX TTC", f"{decompte.montant_ttc:.2f}"],
+        ["À déduire le montant des acomptes délivrés sur l'exercice en cours", "0,00"],
+        ["Montant de l'acompte à délivrer en DH TTC", f"{decompte.montant_ttc:.2f}"],
+        ["Dont TVA (à 20%)", f"{(decompte.montant_ttc * Decimal('0.2')):.2f}"]
     ]
 
-    for row in recap:
-        ws.append(row)
+    recap_table = Table(recap_data, colWidths=[13*cm, 6*cm])
+    recap_table.setStyle(TableStyle([
+        ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTNAME', (0,-2), (-1,-1), 'Helvetica-Bold'),
+        ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('ALIGN', (1,1), (1,-1), 'RIGHT'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('FONTSIZE', (0,0), (-1,-1), 9),
+    ]))
+    elements.append(recap_table)
+    elements.append(Spacer(1, 6))
 
-    for col_cells in ws.columns:
-        max_length = 0
-        column = get_column_letter(col_cells[0].column)  # au lieu de col[0].column_letter
-    for cell in col_cells:
-        try:
-            if cell.value:
-                max_length = max(max_length, len(str(cell.value)))
-        except:
-            pass
-    ws.column_dimensions[column].width = max_length + 3
+    # === TVA Line ===
+    #tva_line = Paragraph(f"Arrété le présent décompte {decompte.type} ,{decompte.numero} , par nous sous-ordonateur , a la somme de : {num2words(decompte.montant_ttc,lang='fr')} Dirhams Tous Taxes Comprises dont TVA {(decompte.montant_ttc * Decimal('0.2')):.2f} dhs", styles['Normal'])
+    #elements.append(tva_line)
+    montant = decompte.montant_ttc
 
+# 1. Extract integer and decimal parts
+    dirhams = int(montant)
+    centimes = int((montant - Decimal(dirhams)) * 100)
 
-    # Préparer la réponse HTTP
-    response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    response['Content-Disposition'] = f'attachment; filename="decompte_{decompte.numero}.xlsx"'
+        # 2. Convert each part to words
+    dirhams_words = num2words(dirhams, lang='fr')
+    centimes_words = num2words(centimes, lang='fr') if centimes > 0 else ""
 
-    output = io.BytesIO()
-    wb.save(output)
-    response.write(output.getvalue())
+        # 3. Build the phrase according to the rules
+    if centimes > 0:
+            montant_text = f"{dirhams_words} Dirhams et {centimes_words} Centimes"
+    else:
+            montant_text = f"{dirhams_words} Dirhams"
 
+# 4. TVA numeric value
+    tva_value = (montant * Decimal('0.2')).quantize(Decimal("0.01"))
+
+        # 5. Full paragraph
+    tva_line = Paragraph(
+            f"Arrété le présent décompte {decompte.type}, {decompte.numero}, "
+            f"par nous sous-ordonateur, à la somme de : {montant_text} "
+            f"Toutes Taxes Comprises dont TVA {tva_value} dhs",
+            styles['Normal']
+        )
+
+    elements.append(tva_line)
+    # Build PDF
+    doc.build(elements)
     return response
-
-
-
-#Decompte delete
-@login_required
-def decompte_delete(request, pk):
-    decompte = get_object_or_404(Decompte, pk=pk)
-    if request.method == 'POST':
-       decompte .delete()
-       messages.success(request, 'Decompte  supprimé avec succès.')
-       return redirect('decompte_list')
-    return render(request, 'markets/confirm_delete.html', {'object': decompte, 'type': 'Decompte'})
-
 @login_required
 def decompte_detail(request, pk):
     decompte = get_object_or_404(Decompte, pk=pk)
@@ -1047,10 +1175,10 @@ def generate_ordre_service_pdf(request, pk):
 
     # En-tête avec logos
     try:
-        logo_left = Image("static/img/logo1.png", width=3*cm, height=3*cm)
-        logo_center = Image("static/img/logo2.png", width=3*cm, height=3*cm)
-        logo_right = Image("static/img/logo3.png", width=3*cm, height=3*cm)
-        header_table = Table([[logo_left, logo_center, logo_right]], colWidths=[5*cm, 5*cm, 5*cm])
+        #logo_left = Image("static/img/logo1.png", width=3*cm, height=3*cm)
+        logo_center = Image("static/img/LOGO.jpg", width=13*cm, height=3*cm)
+        #logo_right = Image("static/img/logo3.png", width=3*cm, height=3*cm)
+        header_table = Table([[logo_center]], colWidths=[5*cm, 5*cm, 5*cm])
         header_table.setStyle(TableStyle([('ALIGN', (0, 0), (-1, -1), 'CENTER')]))
         elements.append(header_table)
     except:
@@ -1111,7 +1239,7 @@ def generate_ordre_service_pdf(request, pk):
 
     # Notification texte
     notif_text = f"""
-    Je soussigné(e) ____________________, représentant la société <b>{ordre.marche.prestataire.nom if ordre.marche and ordre.marche.prestataire else '________________'}</b>,
+    Je soussigné(e) {ordre.marche.prestataire.representant}, représentant la société <b>{ordre.marche.prestataire.nom if ordre.marche and ordre.marche.prestataire else '________________'}</b>,
     reconnais avoir reçu de la Trésorerie Générale du Royaume un exemplaire de l'ordre de service
     concernant le marché <b>{ordre.marche.numero if ordre.marche else '____________'}</b>.
     """
@@ -1194,6 +1322,17 @@ def pv_delete(request, pk):
     return render(request, 'markets/confirm_delete.html', {'object': pv, 'type': 'pv'})
 
 
+
+def date_en_lettres(date_obj):
+    jour = num2words(date_obj.day, lang='fr')
+    mois = date_obj.strftime('%B')  # mois en lettres (janvier, février…)
+    annee = num2words(date_obj.year, lang='fr')
+            # Capitaliser le mois (optionnel : français = minuscules normalement)
+    mois = mois.lower()
+    jour =jour 
+    annee = annee
+    return f"{jour} {mois} {annee}"
+
 @login_required
 def generate_pv_pdf(request, pk):
     pv = get_object_or_404(PV, pk=pk)
@@ -1231,13 +1370,14 @@ def generate_pv_pdf(request, pk):
         fontSize=11,
         leading=16,
     )
-
+    
+    
     # === Logos en haut ===
-    logo1 = Image("static/img/logo1.png", width=100, height=100)
-    logo2 = Image("static/img/logo2.png", width=100, height=100)
-    logo3 = Image("static/img/logo3.png", width=100, height=100)
+    #logo1 = Image("static/img/logo1.png", width=100, height=100)
+    logo2 = Image("static/img/LOGO.jpg", width=400, height=100)
+    #logo3 = Image("static/img/logo3.png", width=100, height=100)
 
-    logos_table = Table([[logo1, logo2, logo3]], colWidths=[150, 150, 150])
+    logos_table = Table([[logo2]], colWidths=[150, 150, 150])
     logos_table.setStyle(
         TableStyle(
             [
@@ -1249,39 +1389,54 @@ def generate_pv_pdf(request, pk):
     )
     elements.append(logos_table)
     elements.append(Spacer(1, 20))
+    signatairess = pv.signataires.all()
+
 
     # === Choix du contenu selon le type de PV ===
+
+    date_lettres = date_en_lettres(pv.date_pv)
+    sinataires = pv.signataires.all()
     if pv.type == "reception provisoire":
-        title = f"PROCÈS VERBAL DE RÉCEPTION PROVISOIRE<br/>RELATIF AU MARCHÉ {pv.marche.type} N° {pv.numero}"
+        title = f"PROCÈS VERBAL DE RÉCEPTION PROVISOIRE<br/>RELATIF AU MARCHÉ   {pv.marche.numero}"
         corps = f"""
-        Le {pv.date_pv.strftime('%d %B %Y')} ; la commission chargée de la réception provisoire du marché N° {pv.numero}, 
-        relatif à {pv.objet}, composée de :<br/><br/>
-        • {pv.signataire or ''} ({pv.fonction_signataire or ''})<br/>
-        • {pv.signataire_deux or ''} ({pv.fonction_signataire_deux or ''})<br/><br/>
+        Le {date_lettres} ; la commission chargée de la réception provisoire du marché  {pv.marche.numero}, 
+        relatif à '{pv.marche.objet}', composée de :<br/><br/>
+        """
+        for sinataire in sinataires:
+            corps+= f"-{sinataire.nom} ({sinataire.fonction})<br/>"
+        corps += f"""<br/><br/>
+    
         a constaté que les prestations exécutées par la société {pv.marche.prestataire} sont terminées et conformes.<br/><br/>
         En conséquence, la réception provisoire est prononcée.<br/><br/>
         <b>Fait à Rabat, le {pv.date_pv.strftime('%d/%m/%Y')}</b>.
         """
 
     elif pv.type == "reception defintive":
-        title = f"PROCÈS VERBAL DE RÉCEPTION DÉFINITIVE<br/>RELATIF AU MARCHÉ {pv.marche.type} N° {pv.numero}"
+        title = f"PROCÈS VERBAL DE RÉCEPTION DÉFINITIVE<br/>RELATIF AU MARCHÉ {pv.marche.type}  {pv.marche.numero}"
         corps = f"""
-        Le {pv.date_pv.strftime('%d %B %Y')} ; la commission chargée de la réception définitive du marché N° {pv.numero}, 
-        relatif à {pv.objet}, composée de :<br/><br/>
-        • {pv.signataire or ''} ({pv.fonction_signataire or ''})<br/>
-        • {pv.signataire_deux or ''} ({pv.fonction_signataire_deux or ''})<br/><br/>
+        Le {date_lettres} ; la commission chargée de la réception définitive du marché  {pv.marche.numero}, 
+        relatif à '{pv.marche.objet}', composée de :<br/><br/>
+        """
+        for sinataire in sinataires:
+            corps+= f"-{sinataire.nom} ({sinataire.fonction})<br/>"
+        corps += f""" <br/><br/>
+        
         a reconnu que toutes les prestations exécutées par la société {pv.marche.prestataire} sont conformes aux conditions du marché.<br/><br/>
         En conséquence, la réception définitive est prononcée.<br/><br/>
         <b>Fait à Rabat, le {pv.date_pv.strftime('%d/%m/%Y')}</b>.
         """
-
+ 
     elif pv.type == "reception defintive parcielle":
-        title = f"PROCÈS VERBAL DE RÉCEPTION DÉFINITIVE PARTIELLE<br/>RELATIF AU MARCHÉ {pv.marche.type} N° {pv.numero}"
+        title = f"PROCÈS VERBAL DE RÉCEPTION DÉFINITIVE PARTIELLE<br/>RELATIF AU MARCHÉ {pv.marche.type}  {pv.marche.numero}"
         corps = f"""
-        Le {pv.date_pv.strftime('%d %B %Y')} ; la commission chargée de la réception définitive partielle du marché N° {pv.numero}, 
-        relatif à {pv.objet}, composée de :<br/><br/>
-        • {pv.signataire or ''} ({pv.fonction_signataire or ''})<br/>
-        • {pv.signataire_deux or ''} ({pv.fonction_signataire_deux or ''})<br/><br/>
+        Le {date_lettres} ; la commission chargée de la réception définitive partielle du marché  {pv.marche.numero}, 
+        relatif à ' {pv.marche.objet}', composée de :<br/><br/>
+        """
+        for sinataire in sinataires:
+            corps+= f"-{sinataire.nom} ({sinataire.fonction})<br/>"
+        corps += f""" <br/><br/>
+        
+        
         a reconnu que les prestations exécutées par la société {pv.marche.prestataire}, 
         pour la période {pv.periode_debut or ''} au {pv.periode_fin or ''}, 
         sont conformes aux conditions du marché.<br/><br/>
@@ -1307,13 +1462,13 @@ def generate_pv_pdf(request, pk):
     elements.append(Spacer(1, 12))
 
     signataires = []
-    if pv.signataire:
-        signataires.append([f"• {pv.signataire} ({pv.fonction_signataire or ''})", ""])
-    if pv.signataire_deux:
-        signataires.append([f"• {pv.signataire_deux} ({pv.fonction_signataire_deux or ''})", ""])
-    if pv.signataire_trois:
-        signataires.append([f"• {pv.signataire_trois} ({pv.fonction_signataire_trois or ''})", ""])
-
+    signatairess = pv.signataires.all()
+    
+    if signatairess.exists():
+        for signataire in signatairess:
+            signataires.append([f"• {signataire.nom}", ""])
+    
+   
     if signataires:
         table = Table(signataires, colWidths=[250, 250])
         table.setStyle(
@@ -1435,6 +1590,181 @@ def acompte_create(request):
         form = AcompteForm()
     return render(request, 'markets/acompte_form.html', {'form': form, 'title': 'Nouveau Acompte'})
 
+@login_required
+def acompte_detail(request, pk):
+    acompte = get_object_or_404(Acompte, pk=pk)
+    return render(request, 'markets/acompte_detail.html', {
+        'acompte': acompte,
+        'marche': Acompte.marche
+    })
 
 
     
+@login_required
+def acompte_update(request, pk):
+    acompte = get_object_or_404(Acompte, pk=pk)
+    if request.method == 'POST':
+        form = AcompteForm(request.POST, instance=acompte)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Acompte  mis à jour avec succès.')
+            return redirect('acompte_detail', pk=pk)
+    else:
+        form = AcompteForm(instance=acompte)
+    return render(request, 'markets/acompte_form.html', {'form': form, 'title': 'Modifier acompte'})
+
+
+@login_required
+def acompte_delete(request, pk):
+    acompte = get_object_or_404(Acompte, pk=pk)
+    if request.method == 'POST':
+       acompte.delete()
+       messages.success(request, 'Acompte supprimé avec succès.')
+       return redirect('acompte_list')
+    return render(request, 'markets/confirm_delete.html', {'object': acompte, 'type': 'document'})
+
+############################################## Signataires ##################################################################################
+
+
+@login_required
+def signataire_create(request):
+    if request.method == 'POST':
+        form = SignataireForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Signataire créé avec succès.')
+            return redirect('signataire_list')
+    else:
+        form = SignataireForm()
+    return render(request, 'markets/signataire_form.html', {'form': form, 'title': 'Nouveau Signataire'})
+
+
+
+
+@login_required
+def signataire_list(request):
+    try:
+        # Get all acomptes with their related marche
+        signataire = Signataire.objects.all()
+        
+        # Pagination
+        paginator = Paginator(signataire, 10)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+
+        return render(request, 'markets/signataire_list.html', {
+            'page_obj': page_obj,
+            
+        })
+    except Exception as e:
+        print(f"Error in signataire_list: {e}")  # Voir l'erreur dans la console
+        # Pour debug, retourner une réponse simple
+        from django.http import HttpResponse
+        return HttpResponse(f"Error: {e}")
+
+
+@login_required
+def signataire_delete(request, pk):
+    signataire = get_object_or_404(Signataire, pk=pk)
+    if request.method == 'POST':
+       signataire.delete()
+       messages.success(request, 'Signataire supprimé avec succès.')
+       return redirect('signataire_list')
+    return render(request, 'markets/confirm_delete.html', {'object': signataire, 'type': 'document'})
+
+@login_required
+def signataire_update(request, pk):
+    signataire = get_object_or_404(Signataire, pk=pk)
+    if request.method == 'POST':
+        form = SignataireForm(request.POST, instance=signataire)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Signataire  mis à jour avec succès.')
+            return redirect('signataire_detail', pk=pk)
+    else:
+        form = SignataireForm(instance=signataire)
+    return render(request, 'markets/signataire_form.html', {'form': form, 'title': 'Modifier signataire'})
+
+@login_required
+def signataire_detail(request, pk):
+    signataire = get_object_or_404(Signataire, pk=pk)
+    return render(request, 'markets/signataire_detail.html', {
+        'signataire': signataire,
+        
+    })
+
+
+
+
+
+
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from .models import Ligne, Marche
+from .forms import LigneForm
+
+@login_required
+def ligne_list(request):
+    
+    #decompte = Decompte.objects.prefetch_related('marche').all()
+    ligne = Ligne.objects.select_related('marche').all()
+    #marches = Marche.objects.prefetch_related('decomptes').all()  
+    lignes = Marche.objects.select_related('lignes').all()
+   
+    paginator = Paginator(ligne, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'markets/ligne_list.html', {
+        'page_obj': page_obj,          # Paginated Decomptes
+        'all_marches': lignes,        # All Marches with related Decomptes
+        
+    })
+
+
+@login_required
+def ligne_create(request):
+    if request.method == 'POST':
+        form = LigneForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Ligne créé avec succès.')
+            return redirect('ligne_list')
+    else:
+        form = LigneForm()
+    return render(request, 'markets/pv_form.html', {'form': form, 'title': 'Nouveau Ligne'})
+
+
+
+@login_required
+def ligne_update(request, pk):
+    ligne = get_object_or_404(Ligne, pk=pk)
+    if request.method == 'POST':
+        form = LigneForm(request.POST, instance=ligne)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Ligne mis à jour avec succès.')
+            return redirect('ligne_detail', pk=pk)
+    else:
+        form = LigneForm(instance=ligne)
+    return render(request, 'markets/ligne_form.html', {'form': form, 'title': 'Modifier Ligne'})
+
+@login_required
+def ligne_delete(request, pk):
+    ligne = get_object_or_404(Ligne, pk=pk)
+    if request.method == 'POST':
+       ligne.delete()
+       messages.success(request, 'Ligne supprimé avec succès.')
+       return redirect('ligne_list')
+    return render(request, 'markets/confirm_delete.html', {'object': ligne, 'type': 'ligne'})
+
+@login_required
+def ligne_detail(request, pk):
+    ligne = get_object_or_404(Ligne, pk=pk)
+    return render(request, 'markets/ligne_detail.html', {
+        'ligne': ligne,
+        'marche': Ligne.marche
+    })

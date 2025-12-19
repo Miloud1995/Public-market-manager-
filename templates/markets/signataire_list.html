@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}Liste des Marchés - Gestion des Marchés Publics{% endblock %}
+
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    
+    <div class="btn-toolbar mb-2 mb-md-0" >
+        <a href="{% url 'signataire_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i>
+            Nouveau Signataire
+        </a>
+    </div>
+</div>
+
+<!-- Filters and Search -->
+ 
+
+<!-- Decompes Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Liste des Signataires</h5>
+    </div>
+    <div class="card-body">
+        {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Fonction</th>
+                            <th>Email</th>
+                            <th>Telephone</th>
+                           
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for signataire in page_obj %}
+                        <tr>
+                            <td>
+                                <a class="text-decoration-none fw-bold">
+                                    {{ signataire.nom }}
+                                </a>
+                            </td>
+                            <td>{{ signataire.fonction }}</td>
+                            <td>{{ signataire.email }}</td>
+                            <td>{{ signataire.telephone }}</td>
+                            
+                
+                            
+                    
+
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'signataire_detail' signataire.pk %}" class="btn btn-sm btn-outline-primary" title="Voir">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a  href="{% url 'signataire_update' signataire.pk %}" class="btn btn-sm btn-outline-warning" title="Modifier">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    
+                                    <a href="#"  class="btn btn-sm btn-outline-danger" title="Supprimer">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if statut_filter %}&statut={{ statut_filter }}{% endif %}">Première</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if statut_filter %}&statut={{ statut_filter }}{% endif %}">Précédente</a>
+                            </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if statut_filter %}&statut={{ statut_filter }}{% endif %}">Suivante</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if statut_filter %}&statut={{ statut_filter }}{% endif %}">Dernière</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-file-text display-1 text-muted"></i>
+                <h4 class="mt-3">Aucun Signataire trouvé</h4>
+                <p class="text-muted">Commencez par créer votre premier Signataire.</p>
+                <a href="{% url 'signataire_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i>
+                    Créer un Signataire
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

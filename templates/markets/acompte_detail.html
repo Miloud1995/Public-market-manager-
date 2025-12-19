@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }} - Gestion des Marchés Publics{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-6">
+ <h1 style="font-size: 20px; align-items: center; color:gray;">Détails d'acompte N°{{acompte.numero}}</h1>
+    </div>
+    <div class="col-6">
+        
+     <div class="btn-toolbar mb-2 mb-md-0" style="float: right;">
+        <a href="{% url 'acompte_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Retour à la liste
+        </a>
+    </div>
+    </div>
+</div>
+   
+<div class="row">
+<div class="col-6">
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Numero </label>
+        <input class="inp" type="text" disabled="true" value="{{acompte.numero}}">
+
+    </div>
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Objet</label>
+        <input class="inp" type="text" disabled="true" value="{{acompte.objet}}">
+
+    </div>
+     <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Statut</label>
+        <input class="inp" type="text" disabled="true" value="{{acompte.statut}}">
+
+    </div>
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Porcentage_realisation</label>
+        <input class="inp" type="text" disabled="true" value="{{acompte.pourcentage_realisation}}">
+
+    </div>
+    
+     
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Date acompte  </label>
+        <input class="inp" type="date" disabled="true" value='{{acompte.date_acompte|date:"Y-m-d"}}'>
+
+    </div>
+
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Periode Debut  </label>
+        <input class="inp" type="date" disabled="true" value='{{acompte.periode_debut|date:"Y-m-d"}}'>
+
+    </div>
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Periode Fin  </label>
+        <input class="inp" type="date" disabled="true" value='{{acompte.periode_fin|date:"Y-m-d"}}'>
+
+    </div>
+
+
+    {%if acompte.observation%}
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Observation </label>
+        <input class="inp" type="text" disabled="true" value="{{acompte.observation}}">
+
+    </div>
+    {%endif%}
+    
+    
+    
+{% if acompte.fichier %}
+    <div class="form-group" style="margin-top: 15px;">
+        <label class="labell">Fichier Justificatif</label><br>
+        <a href="{{ acompte.document_justificatif }}" target="_blank" class="btn btn-outline-primary">
+            Télécharger le fichier
+        </a>
+    </div>
+{% endif %}
+
+
+
+</div>   
+     
+
+</div>
+
+
+
+
+
+
+
+
+
+
+{% endblock %}

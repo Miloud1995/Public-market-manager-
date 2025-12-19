@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }} - Gestion des Marchés Publics{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-6">
+ <h1 style="font-size: 20px; align-items: center; color:gray;">Détails du Ligne {{ligne.numero}}</h1>
+    </div>
+    <div class="col-6">
+        
+     <div class="btn-toolbar mb-2 mb-md-0" style="float: right;">
+        <a href="{% url 'ligne_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Retour à la liste
+        </a>
+    </div>
+    </div>
+</div>
+   
+<div class="row">
+<div class="col-12">
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Désignation</label>
+        <input class="inp" type="text" disabled="true" value="{{ligne.designation}}">
+
+    </div>
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Unite de mesure </label>
+        <input class="inp" type="text" disabled="true" value="{{ligne.unite_mesure}}">
+
+    </div>
+    
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Quantite </label>
+        <input class="inp" type="text" disabled="true" value="{{ligne.quantite}}">
+
+    </div>
+    
+     
+
+    <div class="Form-group" style="margin-top: 15px;"> 
+        <label class="labell" >Prix Unitaire </label>
+        <input class="inp" type="date" disabled="true" value='{{ligne.prix_unitaire}}'>
+
+    </div>
+   
+    
+    
+   
+  
+
+     
+
+   
+    
+    
+    
+    
+</div>   
+
+
+{% endblock %}
