@@ -96,7 +96,7 @@ class Marche(models.Model):
     type = models.CharField(max_length=20, choices=TYPE_CHOICES, verbose_name="Type",)
     montant = models.DecimalField(max_digits=15, decimal_places=2, verbose_name="Montant (DH)")
     montant_annual= models.DecimalField(max_digits=15,null=True,blank=True, decimal_places=2, verbose_name="Montant Annuel (DH)")
-    rest_a_payer = models.DecimalField(max_digits=15, decimal_places=2, verbose_name="Rest a payer (DH)")
+    rest_a_payer = models.DecimalField(max_digits=15, decimal_places=2,blank=True,null=True, verbose_name="Rest a payer (DH)")
     prix_unitaire = models.DecimalField(max_digits=10, decimal_places=2,null=True,blank=True, verbose_name="Prix unitaire (DH)")
     date_signature = models.DateField(null=True, blank=True, verbose_name="Date de signature")
     date_debut = models.DateField(null=True, blank=True, verbose_name="Date de début")
@@ -123,9 +123,9 @@ class Marche(models.Model):
         return reverse('marche_detail', kwargs={'pk': self.pk})
     
     def save(self, *args, **kwargs):
-        if not self.pk:  
-            self.rest_a_payer = self.montant
-        super().save(*args, **kwargs)
+     if not self.pk and self.rest_a_payer is None:
+        self.rest_a_payer = self.montant
+     super().save(*args, **kwargs)
 
 
 
