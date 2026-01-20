@@ -999,14 +999,24 @@ def generate_decompte_pdf(request, pk):
     # === Recap Section ===
     elements.append(Paragraph("<b>RÉCAPITULATION GÉNÉRALE</b>", style_bold))
     elements.append(Spacer(1, 6))
-
+    previous_total = (
+    Decompte.objects
+    .filter(
+        marche=decompte.marche,
+        created_at__lt=decompte.created_at  # or id__lt=decompte.id
+    )
+    .aggregate(total=Sum('montant_ttc'))['total']
+    or Decimal('0.00')
+   )
+    periodicite = decompte.periodicite or 1
+    decompte_tva = tva/Decimal(periodicite)
     recap_data = [
         ["NATURES DES DÉPENSES", "DÉPENSES FAITES"],
         ["Prestation réalisées", f"{decompte.montant_ttc:.2f}"],
         ["TOTAUX TTC", f"{decompte.montant_ttc:.2f}"],
-        ["À déduire le montant des acomptes délivrés sur l'exercice en cours", "0,00"],
+        ["À déduire le montant des acomptes délivrés sur l'exercice en cours", f"{previous_total:.2f}"],
         ["Montant de l'acompte à délivrer en DH TTC", f"{decompte.montant_ttc:.2f}"],
-        ["Dont TVA (à 20%)", f"{(decompte.montant_ttc * Decimal('0.2')):.2f}"]
+        ["Dont TVA (à 20%)", f"{decompte_tva:.2f}"]
     ]
 
     recap_table = Table(recap_data, colWidths=[13*cm, 6*cm])
