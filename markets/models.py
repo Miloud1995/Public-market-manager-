@@ -136,7 +136,7 @@ class Ligne(models.Model):
     numero_prix = models.CharField(max_length=50)
     designation = models.TextField()
     unite_mesure = models.CharField(max_length=50)
-    quantite = models.DecimalField(max_digits=10, decimal_places=2)
+    quantite = models.IntegerField()
     prix_unitaire = models.DecimalField(max_digits=15, decimal_places=2)
 
     def prix_total(self):
@@ -227,7 +227,7 @@ class Decompte(models.Model):
     montant_ht = models.DecimalField(max_digits=15,decimal_places=2, verbose_name="Montant HT (DH)")
     tva = models.DecimalField(max_digits=15,decimal_places=2,default=20,verbose_name="TVA (%)")
     quantite = models.PositiveIntegerField(null=True, blank=True, verbose_name="Quantité")
-    montant_ttc = models.DecimalField(max_digits=15,decimal_places=2,editable=True)
+    montant_ttc = models.DecimalField(max_digits=15,decimal_places=2,editable=True,blank=True, null=True)
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='brouillon', verbose_name="Statut")
     fichier = models.FileField(upload_to='decompte/', null=True, blank=True, verbose_name="Fichier joint (PDF)")
     description = models.TextField(blank=True, null=True, verbose_name=" description")

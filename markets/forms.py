@@ -251,16 +251,23 @@ class DecompteForm(forms.ModelForm):
         if 'acompte' in self.fields:
             self.fields['acompte'].queryset = Acompte.objects.filter(decompte__isnull=True)
             self.fields['acompte'].label = "Acompte associé"
-
+        
+        is_update = self.instance.pk is not None
+        if not is_update:
+    # Création
+           self.fields['montant_ttc'].disabled = True
+           self.fields['montant_ttc'].required = False
+        else:
+    # Modification
+           self.fields['montant_ttc'].disabled = False
         # ✅ Marché dropdown
         self.fields['marche'].queryset = Marche.objects.all().order_by('numero')
         self.fields['marche'].empty_label = "Sélectionnez un marché"
         self.fields['marche'].label = "Marché associé"
 
         # ✅ Layout configuration (crispy-forms)
-        self.helper = FormHelper()
-        self.helper.layout = Layout(
-            Row(
+        layout = [
+             Row(
                 Column('numero', css_class='form-group col-md-4 mb-0'),
                 Column('statut', css_class='form-group col-md-4 mb-0'),
                 Column('type', css_class='form-group col-md-4 mb-0'),
@@ -276,15 +283,20 @@ class DecompteForm(forms.ModelForm):
                 Column('tva', css_class='form-group col-md-4 mb-0'),
             ),
             
-              Row(
+          
+        
+        ]
+        if is_update:layout.append(Row(
                 Column('montant_ttc', css_class='form-group col-md-12 mb-0'),
-            ),
-            Row(
-                Column('fichier', css_class='form-group col-md-12 mb-0'),
-            ),
+            ))
 
-            Submit('submit', 'Enregistrer', css_class='btn btn-primary')
-        )
+        layout.extend([ Row(
+        Column('fichier', css_class='form-group col-md-12 mb-0'),
+         ),
+          Submit('submit', 'Enregistrer', css_class='btn btn-primary')])
+        self.helper = FormHelper()
+        self.helper.layout = Layout(*layout)
+           
         
 
 

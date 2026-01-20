@@ -234,7 +234,7 @@
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="{% url 'admin:index' %}">Administration</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><form id="logout-form" method="post" action="{% url 'admin:logout' %}">
+                            <li><form id="logout-form" method="post" action="{% url 'logout' %}">
                                  {% csrf_token %}
                                   <button type="submit" class="btn btn-link">Se déconnecter</button>
                                </form></li>
